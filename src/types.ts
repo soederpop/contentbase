@@ -80,7 +80,7 @@ export interface DocumentRef {
  */
 export interface ModelDefinition<
   TName extends string = string,
-  TMeta extends z.ZodTypeAny = z.ZodTypeAny,
+  TMeta extends z.ZodType = z.ZodType,
   TSections extends Record<string, SectionDefinition<any>> = Record<
     string,
     never

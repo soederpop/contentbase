@@ -10,7 +10,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "examples": "bun run scripts/examples/run-all.ts"
   },
   "dependencies": {
     "citty": "^0.1.6",
@@ -29,7 +30,7 @@
     "unist-util-find-before": "^4.0.0",
     "unist-util-select": "^5.1.0",
     "unist-util-visit": "^5.0.0",
-    "zod": "^3.23.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

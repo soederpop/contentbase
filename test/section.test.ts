@@ -49,8 +49,8 @@ describe("section helper", () => {
     const TestModel = {
       name: "Test",
       prefix: "test",
-      meta: z.object({}).passthrough(),
-      schema: z.object({}).passthrough(),
+      meta: z.looseObject({}),
+      schema: z.looseObject({}),
       sections: {
         items: section("Acceptance Criteria", {
           extract: (q) => {
@@ -81,8 +81,8 @@ describe("section helper", () => {
     const TestModel = {
       name: "Test",
       prefix: "test",
-      meta: z.object({}).passthrough(),
-      schema: z.object({}).passthrough(),
+      meta: z.looseObject({}),
+      schema: z.looseObject({}),
       sections: {
         missing: section("Nonexistent Section", {
           extract: (q) => q.selectAll("listItem").map((n) => toString(n)),

@@ -11,7 +11,7 @@ import type {
  * Configuration input for defineModel. This is what the user writes.
  */
 export interface DefineModelConfig<
-  TMeta extends z.ZodTypeAny,
+  TMeta extends z.ZodType,
   TSections extends Record<string, SectionDefinition<any>>,
   TRelationships extends Record<string, RelationshipDefinition<any>>,
   TComputed extends Record<string, (self: any) => any>,
@@ -42,7 +42,7 @@ export interface DefineModelConfig<
  */
 export function defineModel<
   TName extends string,
-  TMeta extends z.ZodTypeAny = z.ZodObject<{}, "passthrough">,
+  TMeta extends z.ZodType = z.ZodObject<{}, z.core.$loose>,
   TSections extends Record<string, SectionDefinition<any>> = Record<
     string,
     never
@@ -64,7 +64,7 @@ export function defineModel<
     TComputed
   > = {} as any
 ): ModelDefinition<TName, TMeta, TSections, TRelationships, TComputed> {
-  const meta = (config.meta ?? z.object({}).passthrough()) as TMeta;
+  const meta = (config.meta ?? z.looseObject({})) as TMeta;
 
   return {
     name,
