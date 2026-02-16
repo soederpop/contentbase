@@ -5,6 +5,12 @@ export { AstQuery } from "./ast-query";
 export { NodeShortcuts } from "./node-shortcuts";
 export { parse } from "./parse";
 export type { ParsedDocument } from "./parse";
+export { extractSections } from "./extract-sections";
+export type {
+  ExtractionEntry,
+  ExtractSectionsOptions,
+  SectionSource,
+} from "./extract-sections";
 
 // defineModel and helpers
 export { defineModel } from "./define-model";

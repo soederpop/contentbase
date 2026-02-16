@@ -348,6 +348,104 @@ export class Collection {
     return relativePath.replace(/\.[a-z]+$/i, "");
   }
 
+  // ─── Table of Contents ───
+
+  /**
+   * Generate a markdown table of contents with links to each document.
+   * Links use relative paths that work for GitHub navigation.
+   *
+   * If models are registered, items are grouped under model name headings.
+   * Items that don't match any model appear under an "Other" group.
+   *
+   * @example
+   * ```ts
+   * const toc = collection.tableOfContents({ title: "Project Docs" });
+   * // # Project Docs
+   * //
+   * // ## Epics
+   * //
+   * // - [Authentication](./epics/authentication.mdx)
+   * // - [Searching And Browsing](./epics/searching-and-browsing.mdx)
+   * //
+   * // ## Stories
+   * //
+   * // - [A User should be able to register.](./stories/authentication/a-user-should-be-able-to-register.mdx)
+   * ```
+   */
+  tableOfContents(
+    options: { title?: string; basePath?: string } = {}
+  ): string {
+    if (!this.#loaded) {
+      throw new Error(
+        "Collection has not been loaded. Call load() first."
+      );
+    }
+
+    const basePath = options.basePath ?? ".";
+    const lines: string[] = [];
+
+    if (options.title) {
+      lines.push(`# ${options.title}`, "");
+    }
+
+    const sorted = [...this.available].sort();
+
+    if (this.#models.size > 0) {
+      const grouped = new Map<string, string[]>();
+      const ungrouped: string[] = [];
+
+      for (const pathId of sorted) {
+        const def = this.findModelDefinition(pathId);
+        if (def) {
+          let group = grouped.get(def.name);
+          if (!group) {
+            group = [];
+            grouped.set(def.name, group);
+          }
+          group.push(pathId);
+        } else {
+          ungrouped.push(pathId);
+        }
+      }
+
+      for (const def of this.modelDefinitions) {
+        const ids = grouped.get(def.name);
+        if (!ids || ids.length === 0) continue;
+
+        const depth = options.title ? "##" : "#";
+        lines.push(`${depth} ${def.name}`, "");
+        for (const id of ids) {
+          lines.push(this.#tocEntry(id, basePath));
+        }
+        lines.push("");
+      }
+
+      if (ungrouped.length > 0) {
+        const depth = options.title ? "##" : "#";
+        lines.push(`${depth} Other`, "");
+        for (const id of ungrouped) {
+          lines.push(this.#tocEntry(id, basePath));
+        }
+        lines.push("");
+      }
+    } else {
+      for (const id of sorted) {
+        lines.push(this.#tocEntry(id, basePath));
+      }
+      lines.push("");
+    }
+
+    return lines.join("\n").trimEnd() + "\n";
+  }
+
+  #tocEntry(pathId: string, basePath: string): string {
+    const item = this.#items.get(pathId)!;
+    const ext = path.extname(item.path);
+    const relativePath = `${basePath}/${pathId}${ext}`;
+    const doc = this.document(pathId);
+    return `- [${doc.title}](${relativePath})`;
+  }
+
   // ─── Serialization ───
 
   toJSON(options: { content?: boolean } = {}): Record<string, unknown> {

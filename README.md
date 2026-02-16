@@ -376,6 +376,121 @@ await doc.reload();
 
 ---
 
+## Standalone Parsing
+
+The `parse()` function gives you a queryable document from a file path or raw markdown string, without needing a Collection:
+
+```ts
+import { parse } from "contentbase";
+
+const doc = await parse("./content/my-post.mdx");
+doc.title;                                    // first heading text
+doc.meta;                                     // frontmatter
+doc.astQuery.selectAll("heading");            // AST querying
+doc.nodes.links;                              // node shortcuts
+doc.querySection("Introduction").selectAll("paragraph");
+
+// Also works with raw markdown
+const doc2 = await parse("# Hello\n\nWorld");
+```
+
+---
+
+## Extracting Sections Across Documents
+
+`extractSections()` pulls named sections from multiple documents into a single combined document, with heading depths adjusted automatically:
+
+```ts
+import { extractSections } from "contentbase";
+
+const combined = extractSections([
+  { source: doc1, sections: "Acceptance Criteria" },
+  { source: doc2, sections: ["Acceptance Criteria", "Mockups"] },
+], {
+  title: "All Acceptance Criteria",
+});
+```
+
+This produces:
+
+```md
+# All Acceptance Criteria
+
+## Authentication
+### Acceptance Criteria
+- Users can sign up with email and password
+- ...
+
+## Searching And Browsing
+### Acceptance Criteria
+- Users can search by category
+- ...
+```
+
+### Modes
+
+**Grouped** (default) -- each source document gets a heading (its title), with extracted sections nested underneath:
+
+```ts
+extractSections(entries, { mode: "grouped" });
+```
+
+**Flat** -- sections are placed sequentially with no source grouping:
+
+```ts
+extractSections(entries, { mode: "flat" });
+// ## Acceptance Criteria   <- from doc1
+// - ...
+// ## Acceptance Criteria   <- from doc2
+// - ...
+```
+
+### Options
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `title` | -- | Optional h1 title for the combined document |
+| `mode` | `"grouped"` | `"grouped"` nests under source titles, `"flat"` places sections sequentially |
+| `onMissing` | `"skip"` | `"skip"` silently omits missing sections, `"throw"` raises an error |
+
+The return value is a `ParsedDocument` -- fully queryable with `astQuery`, `nodes`, `extractSection()`, `querySection()`, and `stringify()`.
+
+Sources can be any mix of `Document` and `ParsedDocument` instances.
+
+---
+
+## Table of Contents Generation
+
+Generate a markdown table of contents for a collection with links that work on GitHub:
+
+```ts
+const toc = collection.tableOfContents({ title: "Project Docs" });
+```
+
+Output:
+
+```md
+# Project Docs
+
+## Epic
+
+- [Authentication](./epics/authentication.mdx)
+- [Searching And Browsing](./epics/searching-and-browsing.mdx)
+
+## Story
+
+- [A User should be able to register.](./stories/authentication/a-user-should-be-able-to-register.mdx)
+```
+
+If models are registered, documents are grouped by model. Without models, a flat list is produced. Use `basePath` to control the link prefix:
+
+```ts
+collection.tableOfContents({ basePath: "./content" });
+// links become: ./content/epics/authentication.mdx
+```
+
+---
+
 ## Computed Properties
 
 Derived values that are lazily evaluated from instance data:
@@ -446,6 +561,8 @@ contentbase action publish    # run a named action
 | `section()` | Declare a section extraction |
 | `hasMany()` | Declare a one-to-many relationship |
 | `belongsTo()` | Declare a many-to-one relationship |
+| `parse()` | Parse a file path or markdown string into a queryable `ParsedDocument` |
+| `extractSections()` | Combine sections from multiple documents into one |
 | `CollectionQuery` | Fluent query builder for model instances |
 | `AstQuery` | MDAST query wrapper (select, visit, find) |
 | `NodeShortcuts` | Convenience getters for common AST nodes |
