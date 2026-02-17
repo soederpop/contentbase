@@ -71,6 +71,67 @@ describe("section helper", () => {
     expect(extractCalled).toBe(1); // Cached
   });
 
+  it("stores alternatives in the definition", () => {
+    const sd = section("Acceptance Criteria", {
+      alternatives: ["AC", "ACs"],
+      extract: (q) => q.selectAll("listItem"),
+    });
+    expect(sd.alternatives).toEqual(["AC", "ACs"]);
+  });
+
+  it("uses alternative heading when primary is missing", async () => {
+    const collection = await createTestCollection();
+    const doc = collection.createDocument({
+      id: "test/alt-heading",
+      content: "# Title\n\n## AC\n\n- item one\n- item two\n",
+    });
+
+    const TestModel = {
+      name: "Test",
+      prefix: "test",
+      meta: z.looseObject({}),
+      schema: z.looseObject({}),
+      sections: {
+        criteria: section("Acceptance Criteria", {
+          alternatives: ["AC", "ACs"],
+          extract: (q) => q.selectAll("listItem").map((n) => toString(n)),
+        }),
+      },
+      relationships: {},
+      computed: {},
+    } as any;
+
+    const instance = createModelInstance(doc, TestModel, collection);
+    expect(instance.sections.criteria).toEqual(["item one", "item two"]);
+  });
+
+  it("primary heading takes precedence over alternatives", async () => {
+    const collection = await createTestCollection();
+    const doc = collection.createDocument({
+      id: "test/both-headings",
+      content:
+        "# Title\n\n## Acceptance Criteria\n\n- primary item\n\n## AC\n\n- alt item\n",
+    });
+
+    const TestModel = {
+      name: "Test",
+      prefix: "test",
+      meta: z.looseObject({}),
+      schema: z.looseObject({}),
+      sections: {
+        criteria: section("Acceptance Criteria", {
+          alternatives: ["AC"],
+          extract: (q) => q.selectAll("listItem").map((n) => toString(n)),
+        }),
+      },
+      relationships: {},
+      computed: {},
+    } as any;
+
+    const instance = createModelInstance(doc, TestModel, collection);
+    expect(instance.sections.criteria).toEqual(["primary item"]);
+  });
+
   it("missing section returns empty data", async () => {
     const collection = await createTestCollection();
     const doc = collection.createDocument({

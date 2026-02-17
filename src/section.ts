@@ -19,10 +19,12 @@ export function section<T>(
   options: {
     extract: (query: AstQuery) => T;
     schema?: z.ZodType<T>;
+    alternatives?: string[];
   }
 ): SectionDefinition<T> {
   return {
     heading,
+    alternatives: options.alternatives,
     extract: options.extract,
     schema: options.schema,
   };

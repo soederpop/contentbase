@@ -30,6 +30,8 @@ export interface CollectionOptions {
 export interface SectionDefinition<T = unknown> {
   /** The heading text to find in the document */
   heading: string;
+  /** Alternative heading texts to try if the primary heading is not found */
+  alternatives?: string[];
   /** Extract structured data from the section's AST query */
   extract: (query: AstQuery) => T;
   /** Optional Zod schema to validate the extracted value */

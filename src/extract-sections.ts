@@ -62,7 +62,7 @@ function cloneAndShiftHeadings(
 ): RootContent[] {
   if (nodes.length === 0) return [];
 
-  const firstNode = nodes[0];
+  const firstNode = nodes[0]!;
   const originalDepth =
     firstNode.type === "heading" ? (firstNode as Heading).depth : 1;
   const depthShift = targetDepth - originalDepth;

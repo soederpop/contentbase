@@ -50,7 +50,7 @@ export class NodeShortcuts {
     return this.headings.reduce(
       (memo, heading) => {
         memo[heading.depth] = memo[heading.depth] || [];
-        memo[heading.depth].push(heading);
+        memo[heading.depth]!.push(heading);
         return memo;
       },
       {} as Record<number, Heading[]>

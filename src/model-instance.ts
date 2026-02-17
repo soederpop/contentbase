@@ -46,7 +46,19 @@ export function createModelInstance<
       Object.defineProperty(sections, key, {
         get() {
           if (!cached) {
-            const sectionQuery = document.querySection(sd.heading);
+            let heading = sd.heading;
+            if (sd.alternatives?.length) {
+              const found = document.astQuery.findHeadingByText(heading);
+              if (!found) {
+                for (const alt of sd.alternatives) {
+                  if (document.astQuery.findHeadingByText(alt)) {
+                    heading = alt;
+                    break;
+                  }
+                }
+              }
+            }
+            const sectionQuery = document.querySection(heading);
             cached = { value: sd.extract(sectionQuery) };
           }
           return cached.value;
@@ -198,8 +210,6 @@ export function createModelInstance<
     get slug() {
       return document.slug;
     },
-    document,
-    collection,
     meta,
     sections,
     relationships,
@@ -222,6 +232,10 @@ export function createModelInstance<
       await document.save(opts);
     },
   };
+
+  // Keep heavy back-references accessible but out of REPL output
+  Object.defineProperty(instance, "document", { value: document, enumerable: false });
+  Object.defineProperty(instance, "collection", { value: collection, enumerable: false });
 
   return instance as InferModelInstance<TDef>;
 }
