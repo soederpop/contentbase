@@ -1,4 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import fs from "fs/promises";
+import path from "path";
 import { Collection } from "../src/collection";
 import { createTestCollection, FIXTURES_PATH } from "./helpers";
 import { Epic, Story } from "./fixtures/sdlc/models";
@@ -95,5 +97,64 @@ describe("Collection", () => {
       expect(coll).toBe(collection);
     });
     expect(pluginCalled).toBe(true);
+  });
+
+  describe("generateModelSummary", () => {
+    let tmpDir: string;
+    let tmpCollection: Collection;
+
+    beforeEach(async () => {
+      tmpDir = await fs.mkdtemp(path.join(import.meta.dirname, ".tmp-summary-"));
+      tmpCollection = new Collection({ rootPath: tmpDir });
+      tmpCollection.register(Epic);
+      tmpCollection.register(Story);
+      await tmpCollection.load();
+    });
+
+    afterEach(async () => {
+      await fs.rm(tmpDir, { recursive: true });
+    });
+
+    it("generates markdown with model attributes, sections, relationships, and computed", async () => {
+      const md = await tmpCollection.generateModelSummary();
+
+      // Model headings
+      expect(md).toContain("## Epic");
+      expect(md).toContain("## Story");
+
+      // Prefixes
+      expect(md).toContain("`epics`");
+      expect(md).toContain("`stories`");
+
+      // Meta attributes
+      expect(md).toContain("priority");
+      expect(md).toContain("enum(`low`, `medium`, `high`)");
+      expect(md).toContain("enum(`created`, `in-progress`, `complete`)");
+      expect(md).toContain("`\"created\"`");
+
+      // Sections
+      expect(md).toContain("Acceptance Criteria");
+      expect(md).toContain("Mockups");
+
+      // Relationships
+      expect(md).toContain("hasMany");
+      expect(md).toContain("belongsTo");
+
+      // Computed
+      expect(md).toContain("`isComplete`");
+    });
+
+    it("writes MODELS.md to rootPath", async () => {
+      await tmpCollection.generateModelSummary();
+      const content = await fs.readFile(path.join(tmpDir, "MODELS.md"), "utf8");
+      expect(content).toContain("# Models");
+    });
+
+    it("includes collection actions", async () => {
+      tmpCollection.action("deploy", () => {});
+      const md = await tmpCollection.generateModelSummary();
+      expect(md).toContain("## Actions");
+      expect(md).toContain("`deploy`");
+    });
   });
 });

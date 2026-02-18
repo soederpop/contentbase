@@ -10,7 +10,83 @@ import type {
   CollectionItem,
   CollectionOptions,
   InferModelInstance,
+  HasManyDefinition,
+  RelationshipDefinition,
 } from "./types";
+
+// ─── Zod schema introspection ───
+
+interface FieldInfo {
+  name: string;
+  type: string;
+  required: boolean;
+  defaultValue?: unknown;
+}
+
+function describeZodType(schema: any): { type: string; defaultValue?: unknown; optional: boolean } {
+  const def = schema?._zod?.def;
+  if (!def) return { type: "unknown", optional: false };
+
+  let optional = schema._zod.optout === "optional";
+  let defaultValue: unknown = undefined;
+
+  if (def.type === "default") {
+    defaultValue = def.defaultValue;
+    const inner = describeZodType(def.innerType);
+    return { type: inner.type, defaultValue, optional: true };
+  }
+
+  if (def.type === "optional") {
+    const inner = describeZodType(def.innerType);
+    return { ...inner, optional: true };
+  }
+
+  if (def.type === "nullable") {
+    const inner = describeZodType(def.innerType);
+    return { type: `${inner.type} | null`, optional: inner.optional, defaultValue: inner.defaultValue };
+  }
+
+  if (def.type === "enum") {
+    const values = Object.keys(def.entries);
+    return { type: `enum(\`${values.join("`, `")}\`)`, optional };
+  }
+
+  if (def.type === "array") {
+    const element = describeZodType(def.element);
+    return { type: `${element.type}[]`, optional };
+  }
+
+  if (def.type === "record") {
+    const valType = describeZodType(def.valueType);
+    return { type: `record<string, ${valType.type}>`, optional };
+  }
+
+  if (def.type === "literal") {
+    return { type: `literal(${JSON.stringify(def.value)})`, optional };
+  }
+
+  if (def.type === "union") {
+    const options = (def.options as any[]).map((o: any) => describeZodType(o).type);
+    return { type: options.join(" | "), optional };
+  }
+
+  return { type: def.type ?? "unknown", optional };
+}
+
+function introspectMetaSchema(schema: any): FieldInfo[] {
+  const shape = schema?._zod?.def?.shape;
+  if (!shape) return [];
+
+  return Object.entries(shape).map(([name, fieldSchema]) => {
+    const info = describeZodType(fieldSchema);
+    return {
+      name,
+      type: info.type,
+      required: !info.optional,
+      ...(info.defaultValue !== undefined && { defaultValue: info.defaultValue }),
+    };
+  });
+}
 
 export class Collection {
   readonly rootPath: string;
@@ -444,6 +520,95 @@ export class Collection {
     const relativePath = `${basePath}/${pathId}${ext}`;
     const doc = this.document(pathId);
     return `- [${doc.title}](${relativePath})`;
+  }
+
+  // ─── Model Summary ───
+
+  async generateModelSummary(): Promise<string> {
+    const lines: string[] = ["# Models", ""];
+
+    // Collection-level actions
+    if (this.#actions.size > 0) {
+      lines.push("## Actions", "");
+      for (const name of this.#actions.keys()) {
+        lines.push(`- \`${name}\``);
+      }
+      lines.push("");
+    }
+
+    const defs = this.modelDefinitions;
+
+    for (let i = 0; i < defs.length; i++) {
+      const def = defs[i];
+      if (i > 0) lines.push("---", "");
+      lines.push(`## ${def.name}`, "");
+      lines.push(`**Prefix:** \`${def.prefix}\``, "");
+
+      // Meta attributes
+      const fields = introspectMetaSchema(def.meta);
+      if (fields.length > 0) {
+        lines.push("### Attributes", "");
+        lines.push("| Field | Type | Required | Default |");
+        lines.push("|-------|------|----------|---------|");
+        for (const f of fields) {
+          const req = f.required ? "yes" : "optional";
+          const def_ = f.defaultValue !== undefined
+            ? `\`${JSON.stringify(f.defaultValue)}\``
+            : "—";
+          lines.push(`| ${f.name} | ${f.type} | ${req} | ${def_} |`);
+        }
+        lines.push("");
+      }
+
+      // Sections
+      const sectionEntries = Object.entries(def.sections ?? {});
+      if (sectionEntries.length > 0) {
+        lines.push("### Sections", "");
+        lines.push("| Name | Heading | Alternatives |");
+        lines.push("|------|---------|--------------|");
+        for (const [key, sec] of sectionEntries) {
+          const s = sec as any;
+          const alts = s.alternatives?.length
+            ? s.alternatives.join(", ")
+            : "—";
+          lines.push(`| ${key} | ${s.heading} | ${alts} |`);
+        }
+        lines.push("");
+      }
+
+      // Relationships
+      const relEntries = Object.entries(def.relationships ?? {}) as [string, RelationshipDefinition][];
+      if (relEntries.length > 0) {
+        lines.push("### Relationships", "");
+        lines.push("| Name | Type | Target |");
+        lines.push("|------|------|--------|");
+        for (const [key, rel] of relEntries) {
+          const targetName = rel.target().name;
+          if (rel.type === "hasMany") {
+            lines.push(`| ${key} | hasMany | ${targetName} |`);
+          } else {
+            lines.push(`| ${key} | belongsTo | ${targetName} |`);
+          }
+        }
+        lines.push("");
+      }
+
+      // Computed properties
+      const computedKeys = Object.keys(def.computed ?? {});
+      if (computedKeys.length > 0) {
+        lines.push("### Computed Properties", "");
+        for (const key of computedKeys) {
+          lines.push(`- \`${key}\``);
+        }
+        lines.push("");
+      }
+    }
+
+    const markdown = lines.join("\n").trimEnd() + "\n";
+
+    await fs.writeFile(path.join(this.rootPath, "MODELS.md"), markdown, "utf8");
+
+    return markdown;
   }
 
   // ─── Serialization ───
