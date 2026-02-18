@@ -215,6 +215,13 @@ export class Collection {
       );
     }
 
+    // Strip known extensions if provided (e.g. "some-doc.md" -> "some-doc")
+    const extensionPattern = new RegExp(
+      `\\.(${this.extensions.join("|")})$`,
+      "i"
+    );
+    pathId = pathId.replace(extensionPattern, "");
+
     let doc = this.#documents.get(pathId);
     if (doc) return doc;
 
