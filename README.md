@@ -537,15 +537,49 @@ collection.use(timestampPlugin, { format: "iso" });
 
 ## CLI
 
-Contentbase ships with a CLI for common operations:
+Contentbase ships with a CLI. When you install contentbase as a dependency, the `contentbase` command is available in your project:
 
 ```bash
-contentbase inspect           # show collection info
-contentbase validate          # validate all documents
-contentbase export            # export collection as JSON
-contentbase create Story      # scaffold a new document
-contentbase action publish    # run a named action
+bun add contentbase
+
+# Then use it via bunx, or in package.json scripts
+bunx contentbase inspect -r ./content
 ```
+
+### Commands
+
+```bash
+contentbase init [name]                    # scaffold a new project
+contentbase inspect -r ./content           # show models, sections, relationships, doc counts
+contentbase validate [target] -r ./content # validate documents ('all', a model name, or a path ID)
+contentbase export -r ./content            # export collection as JSON
+contentbase create <Model> --title "..." -r ./content  # scaffold a new document
+contentbase action <name> -r ./content     # run a named action
+```
+
+All commands accept `-r` / `--rootPath` to specify the content directory. If omitted, it defaults to the current working directory (or `contentbase.rootPath` from your `package.json`).
+
+### Model Discovery
+
+The CLI uses a 3-tier system to find your models:
+
+**Tier 1 — `index.ts`** (recommended): If your content directory has an `index.ts` that exports a `Collection` with models registered, the CLI uses it directly. This is what `contentbase init` scaffolds.
+
+```ts
+// content/index.ts
+import { Collection, defineModel, z } from "contentbase";
+
+const Post = defineModel("Post", {
+  meta: z.object({ draft: z.boolean().default(false) }),
+});
+
+export const collection = new Collection({ rootPath: import.meta.dir });
+collection.register(Post);
+```
+
+**Tier 2 — `models.ts`**: If no `index.ts` exists but a `models.ts` is found, the CLI imports it, detects model definitions from exports, and auto-registers them on a new Collection.
+
+**Tier 3 — Auto-discovery**: If neither file exists, the CLI scans top-level subdirectories for markdown files and generates bare models from folder names (`epics/` → `Epic`). These models have no schema validation — useful for quick inspection, but you'll want a `models.ts` or `index.ts` for real use.
 
 ---
 
