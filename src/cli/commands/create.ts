@@ -122,6 +122,10 @@ export default defineCommand({
         const s = sec as any;
         lines.push(`## ${s.heading}`);
         lines.push("");
+        if (s.schema?.description) {
+          lines.push(s.schema.description);
+          lines.push("");
+        }
       }
 
       content = matter.stringify(lines.join("\n"), mergedMeta);
