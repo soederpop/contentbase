@@ -7,7 +7,7 @@ export default defineCommand({
   meta: {
     name: "teach",
     description:
-      "Output a combined PRIMER.md + MODELS.md document for LLM context",
+      "Output a combined document (MODELS.md + TABLE-OF-CONTENTS.md + CLI.md + PRIMER.md) for LLM context",
   },
   args: {
     contentFolder: {
@@ -24,12 +24,24 @@ export default defineCommand({
     // Generate MODELS.md content (returns the markdown string)
     const modelsSummary = await collection.generateModelSummary();
 
-    // Read the bundled PRIMER.md from the contentbase package
-    const primerPath = path.resolve(import.meta.dir, "../../../PRIMER.md");
-    const primer = await fs.readFile(primerPath, "utf8");
+    // Generate TABLE-OF-CONTENTS.md content
+    const toc = collection.tableOfContents({ title: "Table of Contents" });
+
+    // Read the bundled static docs from the contentbase package
+    const packageRoot = path.resolve(import.meta.dir, "../../..");
+    const primer = await fs.readFile(path.join(packageRoot, "PRIMER.md"), "utf8");
+    const cli = await fs.readFile(path.join(packageRoot, "CLI.md"), "utf8");
 
     const output = [
       modelsSummary.trimEnd(),
+      "",
+      "---",
+      "",
+      toc.trimEnd(),
+      "",
+      "---",
+      "",
+      cli.trimEnd(),
       "",
       "---",
       "",
