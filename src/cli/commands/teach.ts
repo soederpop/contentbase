@@ -29,15 +29,11 @@ export default defineCommand({
     const primer = await fs.readFile(primerPath, "utf8");
 
     const output = [
-      primer.trimEnd(),
+      modelsSummary.trimEnd(),
       "",
       "---",
       "",
-      `# Your Project's Models`,
-      "",
-      "The following is the generated model documentation for this project's content collection.",
-      "",
-      modelsSummary.trimEnd(),
+      primer.trimEnd(),
       "",
     ].join("\n");
 
