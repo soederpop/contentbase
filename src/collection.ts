@@ -21,11 +21,14 @@ interface FieldInfo {
   type: string;
   required: boolean;
   defaultValue?: unknown;
+  description?: string;
 }
 
-function describeZodType(schema: any): { type: string; defaultValue?: unknown; optional: boolean } {
+function describeZodType(schema: any): { type: string; defaultValue?: unknown; optional: boolean; description?: string } {
   const def = schema?._zod?.def;
   if (!def) return { type: "unknown", optional: false };
+
+  const description = schema.description ?? def.description;
 
   let optional = schema._zod.optout === "optional";
   let defaultValue: unknown = undefined;
@@ -33,44 +36,44 @@ function describeZodType(schema: any): { type: string; defaultValue?: unknown; o
   if (def.type === "default") {
     defaultValue = def.defaultValue;
     const inner = describeZodType(def.innerType);
-    return { type: inner.type, defaultValue, optional: true };
+    return { type: inner.type, defaultValue, optional: true, description: description ?? inner.description };
   }
 
   if (def.type === "optional") {
     const inner = describeZodType(def.innerType);
-    return { ...inner, optional: true };
+    return { ...inner, optional: true, description: description ?? inner.description };
   }
 
   if (def.type === "nullable") {
     const inner = describeZodType(def.innerType);
-    return { type: `${inner.type} | null`, optional: inner.optional, defaultValue: inner.defaultValue };
+    return { type: `${inner.type} | null`, optional: inner.optional, defaultValue: inner.defaultValue, description: description ?? inner.description };
   }
 
   if (def.type === "enum") {
     const values = Object.keys(def.entries);
-    return { type: `enum(\`${values.join("`, `")}\`)`, optional };
+    return { type: `enum(\`${values.join("`, `")}\`)`, optional, description };
   }
 
   if (def.type === "array") {
     const element = describeZodType(def.element);
-    return { type: `${element.type}[]`, optional };
+    return { type: `${element.type}[]`, optional, description };
   }
 
   if (def.type === "record") {
     const valType = describeZodType(def.valueType);
-    return { type: `record<string, ${valType.type}>`, optional };
+    return { type: `record<string, ${valType.type}>`, optional, description };
   }
 
   if (def.type === "literal") {
-    return { type: `literal(${JSON.stringify(def.value)})`, optional };
+    return { type: `literal(${JSON.stringify(def.value)})`, optional, description };
   }
 
   if (def.type === "union") {
     const options = (def.options as any[]).map((o: any) => describeZodType(o).type);
-    return { type: options.join(" | "), optional };
+    return { type: options.join(" | "), optional, description };
   }
 
-  return { type: def.type ?? "unknown", optional };
+  return { type: def.type ?? "unknown", optional, description };
 }
 
 function introspectMetaSchema(schema: any): FieldInfo[] {
@@ -84,6 +87,7 @@ function introspectMetaSchema(schema: any): FieldInfo[] {
       type: info.type,
       required: !info.optional,
       ...(info.defaultValue !== undefined && { defaultValue: info.defaultValue }),
+      ...(info.description && { description: info.description }),
     };
   });
 }
@@ -548,14 +552,15 @@ export class Collection {
       const fields = introspectMetaSchema(def.meta);
       if (fields.length > 0) {
         lines.push("### Attributes", "");
-        lines.push("| Field | Type | Required | Default |");
-        lines.push("|-------|------|----------|---------|");
+        lines.push("| Field | Type | Required | Default | Description |");
+        lines.push("|-------|------|----------|---------|-------------|");
         for (const f of fields) {
           const req = f.required ? "yes" : "optional";
           const def_ = f.defaultValue !== undefined
             ? `\`${JSON.stringify(f.defaultValue)}\``
             : "—";
-          lines.push(`| ${f.name} | ${f.type} | ${req} | ${def_} |`);
+          const desc = f.description ?? "—";
+          lines.push(`| ${f.name} | ${f.type} | ${req} | ${def_} | ${desc} |`);
         }
         lines.push("");
       }
@@ -564,14 +569,15 @@ export class Collection {
       const sectionEntries = Object.entries(def.sections ?? {});
       if (sectionEntries.length > 0) {
         lines.push("### Sections", "");
-        lines.push("| Name | Heading | Alternatives |");
-        lines.push("|------|---------|--------------|");
+        lines.push("| Name | Heading | Alternatives | Description |");
+        lines.push("|------|---------|--------------|-------------|");
         for (const [key, sec] of sectionEntries) {
           const s = sec as any;
           const alts = s.alternatives?.length
             ? s.alternatives.join(", ")
             : "—";
-          lines.push(`| ${key} | ${s.heading} | ${alts} |`);
+          const desc = s.schema?.description ?? "—";
+          lines.push(`| ${key} | ${s.heading} | ${alts} | ${desc} |`);
         }
         lines.push("");
       }

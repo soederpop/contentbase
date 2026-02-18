@@ -12,17 +12,19 @@ import {
 import { toString } from "mdast-util-to-string";
 
 const epicMeta = z.object({
-  priority: z.enum(["low", "medium", "high"]).optional(),
+  priority: z.enum(["low", "medium", "high"]).optional().describe("Importance level for prioritization"),
   status: z
     .enum(["created", "in-progress", "complete"])
-    .default("created"),
+    .default("created")
+    .describe("Current workflow state"),
 });
 
 const storyMeta = z.object({
   status: z
     .enum(["created", "in-progress", "complete"])
-    .default("created"),
-  epic: z.string().optional(),
+    .default("created")
+    .describe("Current workflow state"),
+  epic: z.string().optional().describe("Slug of the parent epic"),
 });
 
 /** Explicit type for Epic so circular Epic↔Story inference doesn’t collapse to never */
@@ -66,7 +68,7 @@ export const Story: StoryDef = defineModel("Story", {
     acceptanceCriteria: section("Acceptance Criteria", {
       extract: (query) =>
         query.selectAll("listItem").map((n) => toString(n)),
-      schema: z.array(z.string()),
+      schema: z.array(z.string()).describe("List of acceptance criteria as plain text strings"),
     }),
     mockups: section("Mockups", {
       extract: (query) =>
@@ -75,7 +77,7 @@ export const Story: StoryDef = defineModel("Story", {
             .selectAll("link")
             .map((l: any) => [toString(l), l.url])
         ),
-      schema: z.record(z.string(), z.string()),
+      schema: z.record(z.string(), z.string()).describe("Map of mockup label to URL"),
     }),
   },
   relationships: {

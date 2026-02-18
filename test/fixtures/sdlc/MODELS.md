@@ -6,10 +6,10 @@
 
 ### Attributes
 
-| Field | Type | Required | Default |
-|-------|------|----------|---------|
-| priority | enum(`low`, `medium`, `high`) | optional | — |
-| status | enum(`created`, `in-progress`, `complete`) | optional | `"created"` |
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| priority | enum(`low`, `medium`, `high`) | optional | — | Importance level for prioritization |
+| status | enum(`created`, `in-progress`, `complete`) | optional | `"created"` | Current workflow state |
 
 ### Relationships
 
@@ -29,17 +29,17 @@
 
 ### Attributes
 
-| Field | Type | Required | Default |
-|-------|------|----------|---------|
-| status | enum(`created`, `in-progress`, `complete`) | optional | `"created"` |
-| epic | string | optional | — |
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| status | enum(`created`, `in-progress`, `complete`) | optional | `"created"` | Current workflow state |
+| epic | string | optional | — | Slug of the parent epic |
 
 ### Sections
 
-| Name | Heading | Alternatives |
-|------|---------|--------------|
-| acceptanceCriteria | Acceptance Criteria | — |
-| mockups | Mockups | — |
+| Name | Heading | Alternatives | Description |
+|------|---------|--------------|-------------|
+| acceptanceCriteria | Acceptance Criteria | — | List of acceptance criteria as plain text strings |
+| mockups | Mockups | — | Map of mockup label to URL |
 
 ### Relationships
 
