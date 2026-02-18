@@ -70,7 +70,7 @@ describe("Collection.tableOfContents", () => {
   });
 
   it("works without models registered (flat list)", async () => {
-    const bare = new Collection({ rootPath: FIXTURES_PATH });
+    const bare = new Collection({ rootPath: FIXTURES_PATH, autoDiscover: false });
     await bare.load();
 
     const toc = bare.tableOfContents();

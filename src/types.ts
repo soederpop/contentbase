@@ -19,6 +19,8 @@ export interface CollectionOptions {
   rootPath: string;
   extensions?: string[];
   name?: string;
+  /** When true (default), load() looks for a models.{ts,js,mjs} in rootPath and auto-registers exported model definitions. */
+  autoDiscover?: boolean;
 }
 
 // ─── Section system ───

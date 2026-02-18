@@ -92,6 +92,16 @@ export function introspectMetaSchema(schema: any): FieldInfo[] {
   });
 }
 
+function isModelDefinition(value: unknown): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as any).name === "string" &&
+    typeof (value as any).prefix === "string" &&
+    "meta" in (value as any)
+  );
+}
+
 export class Collection {
   readonly rootPath: string;
   readonly name: string;
@@ -103,11 +113,13 @@ export class Collection {
   #actions: Map<string, (collection: Collection, ...args: any[]) => any> =
     new Map();
   #loaded = false;
+  #autoDiscover: boolean;
 
   constructor(options: CollectionOptions) {
     this.rootPath = path.resolve(options.rootPath);
     this.name = options.name ?? options.rootPath;
     this.extensions = options.extensions ?? ["mdx", "md"];
+    this.#autoDiscover = options.autoDiscover ?? true;
   }
 
   // ─── Model registration ───
@@ -132,6 +144,29 @@ export class Collection {
 
   get modelDefinitions(): ModelDefinition<any, any, any, any, any>[] {
     return Array.from(this.#models.values());
+  }
+
+  // ─── Model auto-discovery ───
+
+  /**
+   * Discover and register model definitions from a
+   * models.{ts,js,mjs} file in the collection's root path.
+   */
+  async #discoverModels(): Promise<void> {
+    for (const ext of ["ts", "js", "mjs"]) {
+      const candidate = path.resolve(this.rootPath, `models.${ext}`);
+      try {
+        const mod = await import(candidate);
+        for (const value of Object.values(mod)) {
+          if (isModelDefinition(value) && !this.#models.has((value as any).name)) {
+            this.register(value as any);
+          }
+        }
+        return;
+      } catch {
+        continue;
+      }
+    }
   }
 
   // ─── Loading ───
@@ -161,6 +196,11 @@ export class Collection {
 
     if (this.#loaded && !refresh) {
       return this;
+    }
+
+    // Auto-discover models if none have been manually registered
+    if (this.#models.size === 0 && this.#autoDiscover) {
+      await this.#discoverModels();
     }
 
     if (this.#loaded && refresh) {
