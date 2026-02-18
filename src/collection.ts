@@ -16,7 +16,7 @@ import type {
 
 // ─── Zod schema introspection ───
 
-interface FieldInfo {
+export interface FieldInfo {
   name: string;
   type: string;
   required: boolean;
@@ -76,7 +76,7 @@ function describeZodType(schema: any): { type: string; defaultValue?: unknown; o
   return { type: def.type ?? "unknown", optional, description };
 }
 
-function introspectMetaSchema(schema: any): FieldInfo[] {
+export function introspectMetaSchema(schema: any): FieldInfo[] {
   const shape = schema?._zod?.def?.shape;
   if (!shape) return [];
 

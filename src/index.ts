@@ -1,5 +1,6 @@
 // Core classes
-export { Collection } from "./collection";
+export { Collection, introspectMetaSchema } from "./collection";
+export type { FieldInfo } from "./collection";
 export { Document } from "./document";
 export { AstQuery } from "./ast-query";
 export { NodeShortcuts } from "./node-shortcuts";
