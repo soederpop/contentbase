@@ -5,6 +5,7 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "bin": {
+    "cbase": "./src/cli/index.ts",
     "contentbase": "./src/cli/index.ts"
   },
   "scripts": {

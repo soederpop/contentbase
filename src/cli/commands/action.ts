@@ -12,15 +12,15 @@ export default defineCommand({
       description: "Action name",
       required: true,
     },
-    rootPath: {
+    contentFolder: {
       type: "string",
-      description: "Root path for the collection",
+      description: "Content folder path",
       alias: "r",
     },
   },
   async run({ args }) {
     const collection = await loadCollection({
-      rootPath: args.rootPath as string | undefined,
+      contentFolder: args.contentFolder as string | undefined,
     });
 
     const actionName = args.name as string;

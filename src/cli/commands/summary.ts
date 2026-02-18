@@ -3,8 +3,8 @@ import { loadCollection } from "../load-collection";
 
 export default defineCommand({
   meta: {
-    name: "export",
-    description: "Export collection as JSON",
+    name: "summary",
+    description: "Generate MODELS.md summary of all registered models",
   },
   args: {
     contentFolder: {
@@ -18,7 +18,7 @@ export default defineCommand({
       contentFolder: args.contentFolder as string | undefined,
     });
 
-    const data = await collection.export();
-    console.log(JSON.stringify(data, null, 2));
+    await collection.generateModelSummary();
+    console.log(`MODELS.md written to ${collection.rootPath}/MODELS.md`);
   },
 });

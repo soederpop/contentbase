@@ -7,15 +7,15 @@ export default defineCommand({
     description: "Display collection info and registered models",
   },
   args: {
-    rootPath: {
+    contentFolder: {
       type: "string",
-      description: "Root path for the collection",
+      description: "Content folder path",
       alias: "r",
     },
   },
   async run({ args }) {
     const collection = await loadCollection({
-      rootPath: args.rootPath as string | undefined,
+      contentFolder: args.contentFolder as string | undefined,
     });
 
     console.log(`Collection: ${collection.name}`);

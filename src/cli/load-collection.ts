@@ -98,23 +98,30 @@ async function autoDiscoverModels(collection: Collection): Promise<number> {
 }
 
 export async function loadCollection(options: {
-  rootPath?: string;
+  contentFolder?: string;
   modulePath?: string;
 }): Promise<Collection> {
-  let { rootPath, modulePath } = options;
+  let { contentFolder, modulePath } = options;
+  let rootPath: string | undefined;
 
-  if (!rootPath) {
-    const cwd = process.cwd();
+  const cwd = process.cwd();
+
+  if (contentFolder) {
+    // Resolve relative to cwd
+    rootPath = path.resolve(cwd, contentFolder);
+  } else {
+    // Check package.json for configured content folder
     const pkgPath = path.resolve(cwd, "package.json");
     try {
       const manifest = JSON.parse(await fs.readFile(pkgPath, "utf8"));
-      if (manifest.contentbase?.rootPath) {
-        rootPath = path.resolve(cwd, manifest.contentbase.rootPath);
+      if (manifest.contentbase?.contentFolder) {
+        rootPath = path.resolve(cwd, manifest.contentbase.contentFolder);
       }
     } catch {
       // No package.json found
     }
-    rootPath = rootPath ?? cwd;
+    // Default to ./docs
+    rootPath = rootPath ?? path.resolve(cwd, "docs");
   }
 
   // Tier 1: index.ts — full collection with models already registered
@@ -169,7 +176,7 @@ export async function loadCollection(options: {
     );
   } else {
     console.warn(
-      `[contentbase] No models or markdown files found in ${rootPath}. Run 'contentbase init' to set up a project.`
+      `[contentbase] No models or markdown files found in ${rootPath}. Run 'cbase init' to set up a project.`
     );
   }
 

@@ -3,7 +3,7 @@ import { defineCommand, runMain } from "citty";
 
 const main = defineCommand({
   meta: {
-    name: "contentbase",
+    name: "cbase",
     version: "0.1.0",
     description: "An ORM for Markdown/MDX files",
   },
@@ -14,6 +14,8 @@ const main = defineCommand({
     validate: () => import("./commands/validate.js").then((m) => m.default),
     export: () => import("./commands/export.js").then((m) => m.default),
     action: () => import("./commands/action.js").then((m) => m.default),
+    summary: () => import("./commands/summary.js").then((m) => m.default),
+    teach: () => import("./commands/teach.js").then((m) => m.default),
   },
 });
 

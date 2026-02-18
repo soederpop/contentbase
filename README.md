@@ -543,21 +543,29 @@ Contentbase ships with a CLI. When you install contentbase as a dependency, the 
 bun add contentbase
 
 # Then use it via bunx, or in package.json scripts
-bunx contentbase inspect -r ./content
+bunx contentbase inspect
 ```
 
 ### Commands
 
 ```bash
-contentbase init [name]                    # scaffold a new project
-contentbase inspect -r ./content           # show models, sections, relationships, doc counts
-contentbase validate [target] -r ./content # validate documents ('all', a model name, or a path ID)
-contentbase export -r ./content            # export collection as JSON
-contentbase create <Model> --title "..." -r ./content  # scaffold a new document
-contentbase action <name> -r ./content     # run a named action
+contentbase init [name]                       # scaffold a new project
+contentbase inspect                           # show models, sections, relationships, doc counts
+contentbase validate [target]                 # validate documents ('all', a model name, or a path ID)
+contentbase export                            # export collection as JSON
+contentbase create <Model> --title "..."      # scaffold a new document
+contentbase action <name>                     # run a named action
 ```
 
-All commands accept `-r` / `--rootPath` to specify the content directory. If omitted, it defaults to the current working directory (or `contentbase.rootPath` from your `package.json`).
+All commands accept `--content-folder` / `-r` to specify which folder contains your content. Defaults to `./docs`. You can also set it in `package.json`:
+
+```json
+{
+  "contentbase": {
+    "contentFolder": "content"
+  }
+}
+```
 
 ### Model Discovery
 
@@ -566,7 +574,7 @@ The CLI uses a 3-tier system to find your models:
 **Tier 1 — `index.ts`** (recommended): If your content directory has an `index.ts` that exports a `Collection` with models registered, the CLI uses it directly. This is what `contentbase init` scaffolds.
 
 ```ts
-// content/index.ts
+// docs/index.ts
 import { Collection, defineModel, z } from "contentbase";
 
 const Post = defineModel("Post", {
