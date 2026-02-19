@@ -118,9 +118,9 @@ describe("Collection", () => {
     it("generates markdown with model attributes, sections, relationships, and computed", async () => {
       const md = await tmpCollection.generateModelSummary();
 
-      // Model headings
-      expect(md).toContain("## Epic");
-      expect(md).toContain("## Story");
+      // Model headings (pluralized)
+      expect(md).toContain("## Epics");
+      expect(md).toContain("## Stories");
 
       // Prefixes
       expect(md).toContain("`epics`");

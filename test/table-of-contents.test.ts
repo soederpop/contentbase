@@ -12,8 +12,8 @@ describe("Collection.tableOfContents", () => {
   it("generates markdown with model group headings", () => {
     const toc = collection.tableOfContents();
 
-    expect(toc).toContain("# Epic");
-    expect(toc).toContain("# Story");
+    expect(toc).toContain("## Epics");
+    expect(toc).toContain("## Stories");
   });
 
   it("includes document titles as link text", () => {
@@ -41,8 +41,8 @@ describe("Collection.tableOfContents", () => {
 
     expect(toc).toContain("# Project Docs");
     // Model group headings shift to h2
-    expect(toc).toContain("## Epic");
-    expect(toc).toContain("## Story");
+    expect(toc).toContain("## Epics");
+    expect(toc).toContain("## Stories");
   });
 
   it("sorts items alphabetically within groups", () => {
@@ -85,6 +85,50 @@ describe("Collection.tableOfContents", () => {
     const unloaded = new Collection({ rootPath: FIXTURES_PATH });
 
     expect(() => unloaded.tableOfContents()).toThrow(
+      "Collection has not been loaded"
+    );
+  });
+});
+
+describe("Collection.renderFileTree", () => {
+  it("renders a tree with directory structure", () => {
+    const tree = collection.renderFileTree();
+
+    expect(tree).toContain("epics/");
+    expect(tree).toContain("stories/");
+    expect(tree).toContain("authentication.mdx");
+  });
+
+  it("nests files under their directories", () => {
+    const tree = collection.renderFileTree();
+    const lines = tree.split("\n");
+
+    // Find the stories directory line and the nested file
+    const storiesLine = lines.findIndex((l) => l.includes("stories/"));
+    const nestedFile = lines.findIndex((l) =>
+      l.includes("a-user-should-be-able-to-register.mdx")
+    );
+
+    expect(storiesLine).toBeGreaterThanOrEqual(0);
+    expect(nestedFile).toBeGreaterThan(storiesLine);
+  });
+
+  it("uses tree connector characters", () => {
+    const tree = collection.renderFileTree();
+
+    expect(tree).toMatch(/[├└]/);
+    expect(tree).toMatch(/──/);
+  });
+
+  it("ends with a newline", () => {
+    const tree = collection.renderFileTree();
+    expect(tree.endsWith("\n")).toBe(true);
+  });
+
+  it("throws if collection not loaded", () => {
+    const unloaded = new Collection({ rootPath: FIXTURES_PATH });
+
+    expect(() => unloaded.renderFileTree()).toThrow(
       "Collection has not been loaded"
     );
   });

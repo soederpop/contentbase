@@ -5,6 +5,7 @@ import { Document } from "./document";
 import { CollectionQuery } from "./query/collection-query";
 import { createModelInstance } from "./model-instance";
 import { readDirectory } from "./utils/read-directory";
+import { pluralize } from "./utils/inflect";
 import type {
   ModelDefinition,
   CollectionItem,
@@ -539,8 +540,7 @@ export class Collection {
         const ids = grouped.get(def.name);
         if (!ids || ids.length === 0) continue;
 
-        const depth = options.title ? "##" : "#";
-        lines.push(`${depth} ${def.name}`, "");
+        lines.push(`## ${pluralize(def.name)}`, "");
         for (const id of ids) {
           lines.push(this.#tocEntry(id, basePath));
         }
@@ -548,8 +548,7 @@ export class Collection {
       }
 
       if (ungrouped.length > 0) {
-        const depth = options.title ? "##" : "#";
-        lines.push(`${depth} Other`, "");
+        lines.push(`## Other`, "");
         for (const id of ungrouped) {
           lines.push(this.#tocEntry(id, basePath));
         }
@@ -565,6 +564,69 @@ export class Collection {
     return lines.join("\n").trimEnd() + "\n";
   }
 
+  /**
+   * Renders an ASCII file tree of all documents in the collection.
+   *
+   * @example
+   * ```
+   * const tree = collection.renderFileTree();
+   * // epics/
+   * //   authentication.mdx
+   * //   searching-and-browsing.mdx
+   * // stories/
+   * //   authentication/
+   * //     a-user-should-be-able-to-register.mdx
+   * ```
+   */
+  renderFileTree(): string {
+    if (!this.#loaded) {
+      throw new Error(
+        "Collection has not been loaded. Call load() first."
+      );
+    }
+
+    const sorted = [...this.available].sort();
+
+    // Build a nested tree structure from pathIds
+    interface TreeNode {
+      children: Map<string, TreeNode>;
+    }
+    const root: TreeNode = { children: new Map() };
+
+    for (const pathId of sorted) {
+      const item = this.#items.get(pathId)!;
+      const ext = path.extname(item.path);
+      const fullPath = `${pathId}${ext}`;
+      const parts = fullPath.split("/");
+
+      let node = root;
+      for (const part of parts) {
+        if (!node.children.has(part)) {
+          node.children.set(part, { children: new Map() });
+        }
+        node = node.children.get(part)!;
+      }
+    }
+
+    // Render the tree with indentation and connector lines
+    const lines: string[] = [];
+
+    const render = (node: TreeNode, prefix: string) => {
+      const entries = [...node.children.entries()];
+      entries.forEach(([name, child], i) => {
+        const isLast = i === entries.length - 1;
+        const connector = isLast ? "└── " : "├── ";
+        const isDir = child.children.size > 0;
+        lines.push(`${prefix}${connector}${name}${isDir ? "/" : ""}`);
+        const nextPrefix = prefix + (isLast ? "    " : "│   ");
+        render(child, nextPrefix);
+      });
+    };
+
+    render(root, "");
+    return lines.join("\n") + "\n";
+  }
+
   #tocEntry(pathId: string, basePath: string): string {
     const item = this.#items.get(pathId)!;
     const ext = path.extname(item.path);
@@ -577,6 +639,16 @@ export class Collection {
 
   async generateModelSummary(): Promise<string> {
     const lines: string[] = ["# Models", ""];
+
+    // Preamble
+    lines.push(
+      "Models define the structure of markdown documents in this collection. " +
+      "Each document is a markdown file with YAML frontmatter (metadata attributes) " +
+      "and a heading-based structure (sections). Models specify the expected frontmatter " +
+      "fields via a schema, named sections that map to `##` headings in the document body, " +
+      "relationships to other models, and computed properties derived at query time.",
+      ""
+    );
 
     // Collection-level actions
     if (this.#actions.size > 0) {
@@ -592,7 +664,7 @@ export class Collection {
     for (let i = 0; i < defs.length; i++) {
       const def = defs[i];
       if (i > 0) lines.push("---", "");
-      lines.push(`## ${def.name}`, "");
+      lines.push(`## ${pluralize(def.name)}`, "");
       lines.push(`**Prefix:** \`${def.prefix}\``, "");
 
       // Meta attributes
@@ -655,6 +727,11 @@ export class Collection {
         }
         lines.push("");
       }
+
+      // Example: template content or auto-generated scaffold
+      const exampleContent = await this.#modelExample(def, fields);
+      lines.push("### Example", "");
+      lines.push("```markdown", exampleContent, "```", "");
     }
 
     const markdown = lines.join("\n").trimEnd() + "\n";
@@ -662,6 +739,55 @@ export class Collection {
     await fs.writeFile(path.join(this.rootPath, "MODELS.md"), markdown, "utf8");
 
     return markdown;
+  }
+
+  async #modelExample(
+    def: ModelDefinition<any, any, any, any, any>,
+    fields: FieldInfo[]
+  ): Promise<string> {
+    // Try to load a template file
+    const templateExtensions = ["md", "mdx"];
+    for (const ext of templateExtensions) {
+      const templatePath = path.join(
+        this.rootPath,
+        "templates",
+        `${def.name.toLowerCase()}.${ext}`
+      );
+      try {
+        return (await fs.readFile(templatePath, "utf8")).trimEnd();
+      } catch {
+        // not found, try next
+      }
+    }
+
+    // No template — generate scaffold matching the create command logic
+    const matter = await import("gray-matter");
+    const meta: Record<string, unknown> = {};
+
+    for (const f of fields) {
+      if (f.defaultValue !== undefined) {
+        meta[f.name] = f.defaultValue;
+      }
+    }
+    const definitionDefaults: Record<string, unknown> = (def as any).defaults ?? {};
+    Object.assign(meta, definitionDefaults);
+
+    const bodyLines: string[] = [];
+    bodyLines.push(`# ${def.name} Title`);
+    bodyLines.push("");
+
+    const sections = def.sections ?? {};
+    for (const [, sec] of Object.entries(sections)) {
+      const s = sec as any;
+      bodyLines.push(`## ${s.heading}`);
+      bodyLines.push("");
+      if (s.schema?.description) {
+        bodyLines.push(s.schema.description);
+        bodyLines.push("");
+      }
+    }
+
+    return matter.default.stringify(bodyLines.join("\n"), meta).trimEnd();
   }
 
   // ─── Serialization ───
