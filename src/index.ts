@@ -28,6 +28,9 @@ export { createModelInstance } from "./model-instance";
 // Validation
 export { validateDocument } from "./validator";
 
+// Pattern matching
+export { matchPattern, matchPatterns } from "./utils/match-pattern";
+
 import { toString } from "mdast-util-to-string";
 
 // Types

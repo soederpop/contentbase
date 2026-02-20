@@ -5,6 +5,7 @@ import type {
   ValidationResult,
 } from "./types";
 import type { Document } from "./document";
+import { matchPatterns } from "./utils/match-pattern";
 
 /**
  * Standalone validator that checks a document against a model definition's
@@ -19,7 +20,10 @@ export function validateDocument(
   const errors: z.ZodIssue[] = [];
 
   // Validate meta
-  const rawMeta = { ...(definition.defaults ?? {}), ...document.meta };
+  const patternMeta = definition.pattern
+    ? matchPatterns(definition.pattern, document.id) ?? {}
+    : {};
+  const rawMeta = { ...(definition.defaults ?? {}), ...patternMeta, ...document.meta };
   const metaResult = definition.meta.safeParse(rawMeta);
   if (!metaResult.success) {
     errors.push(...metaResult.error.issues);

@@ -23,6 +23,7 @@ export interface DefineModelConfig<
   computed?: TComputed;
   match?: (doc: DocumentRef) => boolean;
   defaults?: Partial<z.input<TMeta>>;
+  pattern?: string | string[];
 }
 
 /**
@@ -76,5 +77,6 @@ export function defineModel<
     computed: (config.computed ?? ({} as any)) as TComputed,
     match: config.match,
     defaults: config.defaults,
+    pattern: config.pattern,
   };
 }

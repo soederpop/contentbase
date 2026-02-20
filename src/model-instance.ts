@@ -12,6 +12,7 @@ import type { Document } from "./document";
 import type { Collection } from "./collection";
 import { HasManyRelationship } from "./relationships/has-many";
 import { BelongsToRelationship } from "./relationships/belongs-to";
+import { matchPatterns } from "./utils/match-pattern";
 
 /**
  * Creates a model instance from a document and its model definition.
@@ -26,8 +27,11 @@ export function createModelInstance<
   definition: TDef,
   collection: Collection
 ): InferModelInstance<TDef> {
-  // ─── Meta: merge defaults, parse with Zod ───
-  const rawMeta = { ...(definition.defaults ?? {}), ...document.meta };
+  // ─── Meta: merge defaults, pattern-inferred values, then frontmatter ───
+  const patternMeta = definition.pattern
+    ? matchPatterns(definition.pattern, document.id) ?? {}
+    : {};
+  const rawMeta = { ...(definition.defaults ?? {}), ...patternMeta, ...document.meta };
   let meta: any;
   try {
     meta = definition.meta.parse(rawMeta);

@@ -106,6 +106,7 @@ export interface ModelDefinition<
   computed: TComputed;
   match?: (doc: DocumentRef) => boolean;
   defaults?: Partial<z.input<TMeta>>;
+  pattern?: string | string[];
 
   /** The inferred Zod schema for convenience (same as meta) */
   schema: TMeta;
