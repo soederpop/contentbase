@@ -16,6 +16,7 @@ const main = defineCommand({
     action: () => import("./commands/action.js").then((m) => m.default),
     summary: () => import("./commands/summary.js").then((m) => m.default),
     teach: () => import("./commands/teach.js").then((m) => m.default),
+    extract: () => import("./commands/extract.js").then((m) => m.default),
   },
 });
 

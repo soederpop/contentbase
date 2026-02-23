@@ -5,8 +5,7 @@
 Contentbase treats a folder of Markdown and MDX files as a typed, queryable database. Define models with Zod schemas, extract structured data from headings and lists, traverse parent/child relationships across documents, validate everything, and query it all with a fluent API.
 
 ```ts
-import { Collection, defineModel, section, hasMany, z } from "contentbase";
-import { toString } from "mdast-util-to-string";
+import { Collection, defineModel, section, hasMany, z, toString } from "contentbase";
 
 const Story = defineModel("Story", {
   meta: z.object({
@@ -83,6 +82,8 @@ A model is a config object that describes one type of document. It declares:
 - **sections** -- named extractions from heading-based sections
 - **relationships** -- `hasMany` / `belongsTo` links between models
 - **computed** -- derived values calculated from instance data
+- **defaults** -- static default values for frontmatter fields
+- **pattern** -- Express-style path patterns for inferring meta from file paths
 
 ```ts
 const Epic = defineModel("Epic", {
@@ -105,12 +106,33 @@ const Epic = defineModel("Epic", {
 
 The `prefix` determines which files match this model. Files whose path starts with `"epics"` are Epics. If omitted, the prefix is auto-pluralized from the name (`"Epic"` -> `"epics"`).
 
+#### Path Patterns
+
+Models can declare Express-style path patterns to automatically infer meta values from the document's file path:
+
+```ts
+const Story = defineModel("Story", {
+  prefix: "stories",
+  pattern: "stories/:epic/:slug",
+  meta: z.object({
+    epic: z.string(),
+    slug: z.string(),
+  }),
+});
+```
+
+A file at `stories/authentication/user-can-register.mdx` will automatically have `{ epic: "authentication", slug: "user-can-register" }` inferred into its meta. Explicit frontmatter values always take precedence over pattern-inferred values. You can also supply an array of patterns -- the first match wins.
+
 ### Collections
 
 A `Collection` loads a directory tree and gives you access to documents and typed model instances.
 
 ```ts
-const collection = new Collection({ rootPath: "./content" });
+const collection = new Collection({
+  rootPath: "./content",
+  extensions: ["mdx", "md"],   // default
+  autoDiscover: true,          // auto-load models.ts if no models registered
+});
 await collection.load();
 
 // Register models for prefix-based matching
@@ -141,8 +163,7 @@ Given this Markdown:
 Define a section to extract the list items:
 
 ```ts
-import { section } from "contentbase";
-import { toString } from "mdast-util-to-string";
+import { section, toString } from "contentbase";
 
 const Story = defineModel("Story", {
   sections: {
@@ -150,12 +171,13 @@ const Story = defineModel("Story", {
       extract: (query) =>
         query.selectAll("listItem").map((node) => toString(node)),
       schema: z.array(z.string()),
+      alternatives: ["Requirements"],  // fallback heading names
     }),
   },
 });
 ```
 
-The `extract` function receives an `AstQuery` scoped to the content under that heading. The `schema` is optional and used during validation.
+The `extract` function receives an `AstQuery` scoped to the content under that heading. The `schema` is optional and used during validation. The `alternatives` array provides fallback heading names -- if "Acceptance Criteria" isn't found, it tries "Requirements" next.
 
 Section data is **lazily computed and cached** -- the extract function only runs the first time you access the property.
 
@@ -489,6 +511,32 @@ collection.tableOfContents({ basePath: "./content" });
 // links become: ./content/epics/authentication.mdx
 ```
 
+### File Tree
+
+Render an ASCII file tree of all documents in the collection:
+
+```ts
+const tree = collection.renderFileTree();
+```
+
+```
+epics/
+├── authentication.mdx
+└── searching-and-browsing.mdx
+stories/
+└── authentication/
+    └── a-user-should-be-able-to-register.mdx
+```
+
+### Model Summary
+
+Generate comprehensive documentation of all registered models, including schema fields, sections, relationships, and defaults:
+
+```ts
+const summary = await collection.generateModelSummary();
+// Returns markdown documenting each model's schema, sections, relationships
+```
+
 ---
 
 ## Computed Properties
@@ -537,27 +585,31 @@ collection.use(timestampPlugin, { format: "iso" });
 
 ## CLI
 
-Contentbase ships with a CLI. When you install contentbase as a dependency, the `contentbase` command is available in your project:
+Contentbase ships with a CLI available as both `cbase` and `contentbase`:
 
 ```bash
 bun add contentbase
 
 # Then use it via bunx, or in package.json scripts
-bunx contentbase inspect
+bunx cbase inspect
 ```
 
 ### Commands
 
 ```bash
-contentbase init [name]                       # scaffold a new project
-contentbase inspect                           # show models, sections, relationships, doc counts
-contentbase validate [target]                 # validate documents ('all', a model name, or a path ID)
-contentbase export                            # export collection as JSON
-contentbase create <Model> --title "..."      # scaffold a new document
-contentbase action <name>                     # run a named action
+cbase init [name]                             # scaffold a new project
+cbase inspect                                 # show models, sections, relationships, doc counts
+cbase validate [target]                       # validate documents ('all', a model name, or a path ID)
+cbase validate [target] --setDefaultMeta      # validate and write default frontmatter to documents missing meta
+cbase export                                  # export collection as JSON
+cbase create <Model> --title "..."            # scaffold a new document (uses templates if available)
+cbase action <name>                           # run a named action
+cbase summary                                 # generate MODELS.md and TABLE-OF-CONTENTS.md
+cbase teach                                   # output combined documentation for LLM context
+cbase extract <glob> --sections "A, B"        # extract specific sections from matching documents
 ```
 
-All commands accept `--content-folder` / `-r` to specify which folder contains your content. Defaults to `./docs`. You can also set it in `package.json`:
+All commands accept `--contentFolder` / `-r` to specify which folder contains your content. Defaults to `./docs`. You can also set it in `package.json`:
 
 ```json
 {
@@ -566,6 +618,47 @@ All commands accept `--content-folder` / `-r` to specify which folder contains y
   }
 }
 ```
+
+### extract
+
+The `extract` command outputs document titles, leading content, and only the requested sections -- combined into a single document suitable for creating new content:
+
+```bash
+# Extract Acceptance Criteria from all stories
+cbase extract "stories/**/*" --sections "Acceptance Criteria"
+
+# Combine epics into a single document with a title
+cbase extract "epics/*" -s "Stories" --title "All Stories"
+
+# Multiple sections, include frontmatter, raw heading depths
+cbase extract "epics/*" -s "Stories, Notes" --frontmatter --no-normalize-headings
+```
+
+Glob patterns are matched against document path IDs using [picomatch](https://github.com/micromatch/picomatch). Sections that don't exist in a document are silently skipped.
+
+By default, heading depths are normalized so each document's content nests properly in the combined output. When `--title` is provided, it becomes the h1 and document titles shift to h2. Use `--no-normalize-headings` to preserve original heading depths.
+
+### summary
+
+Generates two files in your content directory:
+
+- **MODELS.md** -- documents each registered model's schema fields, sections, relationships, and defaults
+- **TABLE-OF-CONTENTS.md** -- a linked listing of all documents grouped by model
+
+### teach
+
+Outputs a combined document (MODELS.md + TABLE-OF-CONTENTS.md + CLI.md + PRIMER.md) designed to be pasted into an LLM conversation to teach it about your content structure.
+
+### create
+
+The `create` command scaffolds new documents with smart defaults:
+
+```bash
+cbase create Story --title "User can logout"
+cbase create Epic --title "Payments" --meta.priority high
+```
+
+If a template exists at `templates/<model>.md` (or `.mdx`) in your content directory, it's used as the base. Meta values are merged with this priority: Zod defaults < model defaults < template frontmatter < CLI `--meta.*` flags.
 
 ### Model Discovery
 
@@ -610,7 +703,11 @@ collection.register(Post);
 | `NodeShortcuts` | Convenience getters for common AST nodes |
 | `createModelInstance()` | Low-level factory for model instances |
 | `validateDocument()` | Standalone validation function |
+| `matchPattern()` | Express-style path pattern matching (`:param` syntax) |
+| `matchPatterns()` | Try multiple patterns against a path, first match wins |
+| `introspectMetaSchema()` | Extract field info (name, type, required, default) from a Zod schema |
 | `z` | Re-exported from Zod (no extra dependency needed) |
+| `toString` | Re-exported from `mdast-util-to-string` |
 
 ---
 

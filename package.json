@@ -21,6 +21,7 @@
     "mdast-util-mdxjs-esm": "^2.0.1",
     "mdast-util-to-markdown": "^2.1.2",
     "mdast-util-to-string": "^4.0.0",
+    "picomatch": "^4.0.3",
     "remark-gfm": "^4.0.0",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/mdast": "^4.0.4",
+    "@types/picomatch": "^4.0.2",
     "bun-types": "^1.1.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"

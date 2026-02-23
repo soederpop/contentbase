@@ -156,11 +156,6 @@ export async function loadCollection(options: {
       }
     }
 
-    if (registered > 0) {
-      console.warn(
-        `[contentbase] Loaded ${registered} model(s) from models.ts. Consider creating an index.ts for full control.`
-      );
-    }
 
     await collection.load();
     return collection;
