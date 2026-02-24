@@ -1,46 +1,44 @@
-import { defineCommand } from "citty";
-import { loadCollection } from "../load-collection";
+import { z } from 'zod'
+import { commands } from '../registry.js'
+import { loadCollection } from '../load-collection.js'
 
-export default defineCommand({
-  meta: {
-    name: "inspect",
-    description: "Display collection info and registered models",
-  },
-  args: {
-    contentFolder: {
-      type: "string",
-      description: "Content folder path",
-      alias: "r",
-    },
-  },
-  async run({ args }) {
-    const collection = await loadCollection({
-      contentFolder: args.contentFolder as string | undefined,
-    });
+const argsSchema = z.object({
+  contentFolder: z.string().optional(),
+})
 
-    console.log(`Collection: ${collection.name}`);
-    console.log(`Root: ${collection.rootPath}`);
-    console.log(`Items: ${collection.available.length}`);
-    console.log();
+async function handler(options: z.infer<typeof argsSchema>) {
+  const collection = await loadCollection({
+    contentFolder: options.contentFolder,
+  })
 
-    for (const def of collection.modelDefinitions) {
-      const matchingItems = collection.available.filter((id) =>
-        id.startsWith(def.prefix)
-      );
-      console.log(`  Model: ${def.name}`);
-      console.log(`    Prefix: ${def.prefix}`);
-      console.log(
-        `    Sections: ${Object.keys(def.sections).join(", ") || "(none)"}`
-      );
-      console.log(
-        `    Relationships: ${Object.keys(def.relationships).join(", ") || "(none)"}`
-      );
-      console.log(`    Documents: ${matchingItems.length}`);
-      console.log();
-    }
+  console.log(`Collection: ${collection.name}`)
+  console.log(`Root: ${collection.rootPath}`)
+  console.log(`Items: ${collection.available.length}`)
+  console.log()
 
-    if (collection.availableActions.length > 0) {
-      console.log(`Actions: ${collection.availableActions.join(", ")}`);
-    }
-  },
-});
+  for (const def of collection.modelDefinitions) {
+    const matchingItems = collection.available.filter((id) =>
+      id.startsWith(def.prefix)
+    )
+    console.log(`  Model: ${def.name}`)
+    console.log(`    Prefix: ${def.prefix}`)
+    console.log(
+      `    Sections: ${Object.keys(def.sections).join(', ') || '(none)'}`
+    )
+    console.log(
+      `    Relationships: ${Object.keys(def.relationships).join(', ') || '(none)'}`
+    )
+    console.log(`    Documents: ${matchingItems.length}`)
+    console.log()
+  }
+
+  if (collection.availableActions.length > 0) {
+    console.log(`Actions: ${collection.availableActions.join(', ')}`)
+  }
+}
+
+commands.register('inspect', {
+  description: 'Display collection info and registered models',
+  argsSchema,
+  handler,
+})

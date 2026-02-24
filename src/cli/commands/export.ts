@@ -1,24 +1,22 @@
-import { defineCommand } from "citty";
-import { loadCollection } from "../load-collection";
+import { z } from 'zod'
+import { commands } from '../registry.js'
+import { loadCollection } from '../load-collection.js'
 
-export default defineCommand({
-  meta: {
-    name: "export",
-    description: "Export collection as JSON",
-  },
-  args: {
-    contentFolder: {
-      type: "string",
-      description: "Content folder path",
-      alias: "r",
-    },
-  },
-  async run({ args }) {
-    const collection = await loadCollection({
-      contentFolder: args.contentFolder as string | undefined,
-    });
+const argsSchema = z.object({
+  contentFolder: z.string().optional(),
+})
 
-    const data = await collection.export();
-    console.log(JSON.stringify(data, null, 2));
-  },
-});
+async function handler(options: z.infer<typeof argsSchema>) {
+  const collection = await loadCollection({
+    contentFolder: options.contentFolder,
+  })
+
+  const data = await collection.export()
+  console.log(JSON.stringify(data, null, 2))
+}
+
+commands.register('export', {
+  description: 'Export collection as JSON',
+  argsSchema,
+  handler,
+})

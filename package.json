@@ -14,8 +14,15 @@
     "typecheck": "tsc --noEmit",
     "examples": "bun run scripts/examples/run-all.ts"
   },
+  "peerDependencies": {
+    "@soederpop/luca": ">=0.0.1"
+  },
+  "peerDependenciesMeta": {
+    "@soederpop/luca": {
+      "optional": true
+    }
+  },
   "dependencies": {
-    "citty": "^0.1.6",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "mdast-util-mdxjs-esm": "^2.0.1",

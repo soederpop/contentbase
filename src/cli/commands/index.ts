@@ -1,0 +1,13 @@
+// Side-effect imports register each command
+import './init.js'
+import './create.js'
+import './inspect.js'
+import './validate.js'
+import './export.js'
+import './action.js'
+import './summary.js'
+import './teach.js'
+import './extract.js'
+import './mcp.js'
+import './console.js'
+import './help.js'

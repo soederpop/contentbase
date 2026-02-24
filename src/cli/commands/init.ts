@@ -1,30 +1,17 @@
-import { defineCommand } from "citty";
-import fs from "fs/promises";
-import path from "path";
+import fs from 'fs/promises'
+import path from 'path'
+import { commands } from '../registry.js'
 
-export default defineCommand({
-  meta: {
-    name: "init",
-    description: "Initialize a new contentbase project",
-  },
-  args: {
-    name: {
-      type: "positional",
-      description: "Project name",
-      required: false,
-    },
-  },
-  async run({ args }) {
-    const name = (args.name as string) || "my-content";
-    const dir = path.resolve(process.cwd(), name);
+async function handler(_options: any, context: { container: any }) {
+  const name = (context.container.argv._[1] as string) || 'my-content'
+  const dir = path.resolve(process.cwd(), name)
 
-    await fs.mkdir(dir, { recursive: true });
-    await fs.mkdir(path.join(dir, "posts"), { recursive: true });
+  await fs.mkdir(dir, { recursive: true })
+  await fs.mkdir(path.join(dir, 'posts'), { recursive: true })
 
-    // Create a sample model file
-    await fs.writeFile(
-      path.join(dir, "models.ts"),
-      `import { defineModel, z } from "contentbase";
+  await fs.writeFile(
+    path.join(dir, 'models.ts'),
+    `import { defineModel, z } from "contentbase";
 
 export const Post = defineModel("Post", {
   prefix: "posts",
@@ -34,13 +21,12 @@ export const Post = defineModel("Post", {
   }),
 });
 `,
-      "utf8"
-    );
+    'utf8'
+  )
 
-    // Create a sample post
-    await fs.writeFile(
-      path.join(dir, "posts", "hello-world.mdx"),
-      `---
+  await fs.writeFile(
+    path.join(dir, 'posts', 'hello-world.mdx'),
+    `---
 status: draft
 author: me
 ---
@@ -49,13 +35,12 @@ author: me
 
 Welcome to your contentbase project!
 `,
-      "utf8"
-    );
+    'utf8'
+  )
 
-    // Create index.ts
-    await fs.writeFile(
-      path.join(dir, "index.ts"),
-      `import { Collection } from "contentbase";
+  await fs.writeFile(
+    path.join(dir, 'index.ts'),
+    `import { Collection } from "contentbase";
 import { Post } from "./models";
 
 export const collection = new Collection({
@@ -64,12 +49,16 @@ export const collection = new Collection({
 
 collection.register(Post);
 `,
-      "utf8"
-    );
+    'utf8'
+  )
 
-    console.log(`Created contentbase project at ${dir}`);
-    console.log(`  ${name}/models.ts`);
-    console.log(`  ${name}/index.ts`);
-    console.log(`  ${name}/posts/hello-world.mdx`);
-  },
-});
+  console.log(`Created contentbase project at ${dir}`)
+  console.log(`  ${name}/models.ts`)
+  console.log(`  ${name}/index.ts`)
+  console.log(`  ${name}/posts/hello-world.mdx`)
+}
+
+commands.register('init', {
+  description: 'Initialize a new contentbase project',
+  handler,
+})
