@@ -585,7 +585,7 @@ collection.use(timestampPlugin, { format: "iso" });
 
 ## CLI
 
-Contentbase ships with a CLI available as both `cbase` and `contentbase`:
+Contentbase ships with a CLI available as both `cbase` and `contentbase`. See [CLI.md](./CLI.md) for the full reference with examples for every command.
 
 ```bash
 bun add contentbase
@@ -598,18 +598,21 @@ bunx cbase inspect
 
 ```bash
 cbase init [name]                             # scaffold a new project
+cbase create <Model> --title "..."            # scaffold a new document (uses templates if available)
 cbase inspect                                 # show models, sections, relationships, doc counts
 cbase validate [target]                       # validate documents ('all', a model name, or a path ID)
-cbase validate [target] --setDefaultMeta      # validate and write default frontmatter to documents missing meta
 cbase export                                  # export collection as JSON
-cbase create <Model> --title "..."            # scaffold a new document (uses templates if available)
-cbase action <name>                           # run a named action
+cbase extract <glob> --sections "A, B"        # extract specific sections from matching documents
 cbase summary                                 # generate MODELS.md and TABLE-OF-CONTENTS.md
 cbase teach                                   # output combined documentation for LLM context
-cbase extract <glob> --sections "A, B"        # extract specific sections from matching documents
+cbase action <name>                           # run a named action
+cbase serve                                   # start HTTP server with REST API and doc serving
+cbase mcp                                     # start MCP server for AI agent integration
+cbase console                                 # interactive REPL with collection in scope
+cbase help                                    # list available commands
 ```
 
-All commands accept `--contentFolder` / `-r` to specify which folder contains your content. Defaults to `./docs`. You can also set it in `package.json`:
+All commands accept `--contentFolder` to specify which folder contains your content. Defaults to `./docs`. You can also set it in `package.json`:
 
 ```json
 {
@@ -617,6 +620,44 @@ All commands accept `--contentFolder` / `-r` to specify which folder contains yo
     "contentFolder": "content"
   }
 }
+```
+
+### serve
+
+Start an HTTP server that exposes a full REST API for the collection. Documents are available as JSON, rendered HTML, or raw markdown.
+
+```bash
+# Start on default port 8000
+cbase serve
+
+# Custom port, specific content folder
+cbase serve --port 9000 --contentFolder ./sdlc
+```
+
+**Built-in endpoints:**
+
+| Path | Description |
+|------|-------------|
+| `GET /api/inspect` | Collection overview |
+| `GET /api/models` | All model definitions |
+| `GET /api/documents` | List documents (filter with `?model=`) |
+| `GET/POST/PUT/PATCH/DELETE /api/documents/:pathId` | Document CRUD |
+| `GET /api/query?model=&where=&select=` | Query model instances |
+| `GET /api/search?pattern=` | Full-text regex search |
+| `GET /api/validate?pathId=` | Validate against schema |
+| `GET/POST /api/actions` | List or execute actions |
+| `GET /docs/:path.json\|.md\|.html` | Content-negotiated doc serving |
+| `GET /openapi.json` | Auto-generated OpenAPI 3.1 spec |
+
+You can also add your own endpoints by placing files in an `endpoints/` directory. See [CLI.md](./CLI.md#user-defined-endpoints) for details.
+
+### mcp
+
+Start a Model Context Protocol server for AI agent integration. Exposes tools, resources, and prompts for the collection.
+
+```bash
+cbase mcp                                     # stdio transport (for Claude Desktop, etc.)
+cbase mcp --transport http --port 3003        # HTTP transport
 ```
 
 ### extract
@@ -637,17 +678,6 @@ cbase extract "epics/*" -s "Stories, Notes" --frontmatter --no-normalize-heading
 Glob patterns are matched against document path IDs using [picomatch](https://github.com/micromatch/picomatch). Sections that don't exist in a document are silently skipped.
 
 By default, heading depths are normalized so each document's content nests properly in the combined output. When `--title` is provided, it becomes the h1 and document titles shift to h2. Use `--no-normalize-headings` to preserve original heading depths.
-
-### summary
-
-Generates two files in your content directory:
-
-- **MODELS.md** -- documents each registered model's schema fields, sections, relationships, and defaults
-- **TABLE-OF-CONTENTS.md** -- a linked listing of all documents grouped by model
-
-### teach
-
-Outputs a combined document (MODELS.md + TABLE-OF-CONTENTS.md + CLI.md + PRIMER.md) designed to be pasted into an LLM conversation to teach it about your content structure.
 
 ### create
 
