@@ -59,9 +59,86 @@ export async function get(params: any, ctx: any) {
     case 'html': {
       const html = await renderHtml(doc.content)
       const page = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>${doc.title}</title>
-<style>body{font-family:system-ui,sans-serif;max-width:48rem;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#1a1a1a}code{background:#f4f4f4;padding:0.2em 0.4em;border-radius:3px}pre code{display:block;padding:1em;overflow-x:auto}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:0.5em}</style>
-</head><body>${html}</body></html>`
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${doc.title}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"><\/script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    line-height: 1.7;
+    color: #1a1a2e;
+    background: #fafafa;
+  }
+  h1 { font-size: 2rem; font-weight: 600; margin: 2rem 0 1rem; color: #0f0f23; }
+  h2 { font-size: 1.5rem; font-weight: 600; margin: 2.5rem 0 0.75rem; color: #16163a; border-bottom: 1px solid #e2e2e8; padding-bottom: 0.4rem; }
+  h3 { font-size: 1.2rem; font-weight: 600; margin: 2rem 0 0.5rem; color: #1a1a2e; }
+  h4, h5, h6 { font-weight: 600; margin: 1.5rem 0 0.5rem; }
+  p { margin: 0 0 1rem; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  blockquote {
+    border-left: 3px solid #6366f1;
+    margin: 1rem 0;
+    padding: 0.5rem 1rem;
+    background: #f0f0ff;
+    color: #3730a3;
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0; }
+  code {
+    font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+    font-feature-settings: "liga" 1, "calt" 1;
+    -webkit-font-feature-settings: "liga" 1, "calt" 1;
+    font-size: 0.875em;
+    background: #ededf0;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    color: #d6336c;
+  }
+  pre {
+    margin: 1rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #282c34;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  pre code {
+    display: block;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    background: none;
+    color: #abb2bf;
+    border-radius: 0;
+  }
+  pre code .hljs-comment { font-style: italic; }
+  ul, ol { padding-left: 1.5rem; margin: 0.5rem 0 1rem; }
+  li { margin: 0.3rem 0; }
+  li > ul, li > ol { margin: 0.2rem 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th { background: #f0f0f5; font-weight: 600; text-align: left; }
+  td, th { border: 1px solid #ddd; padding: 0.6em 0.8em; font-size: 0.95rem; }
+  tr:nth-child(even) { background: #f8f8fb; }
+  hr { border: none; border-top: 1px solid #e2e2e8; margin: 2rem 0; }
+  img { max-width: 100%; height: auto; border-radius: 6px; }
+  .meta-header { color: #6b7280; font-size: 0.85rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e2e8; }
+  .meta-header span { margin-right: 1.5rem; }
+</style>
+</head>
+<body>
+${doc.meta && Object.keys(doc.meta).length > 0 ? `<div class="meta-header">${Object.entries(doc.meta).filter(([k]) => k !== 'title').map(([k, v]) => `<span><strong>${k}:</strong> ${v}</span>`).join('')}</div>` : ''}
+${html}
+<script>hljs.highlightAll();<\/script>
+</body></html>`
       ctx.response.type('text/html')
       ctx.response.send(page)
       return
