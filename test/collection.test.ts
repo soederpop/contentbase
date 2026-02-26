@@ -53,7 +53,8 @@ describe("Collection", () => {
   it("registers model definitions", () => {
     expect(collection.getModelDefinition("Epic")).toBeDefined();
     expect(collection.getModelDefinition("Story")).toBeDefined();
-    expect(collection.modelDefinitions.length).toBe(2);
+    expect(collection.getModelDefinition("Base")).toBeDefined();
+    expect(collection.modelDefinitions.length).toBe(3);
   });
 
   it("finds model definition by pathId prefix", () => {

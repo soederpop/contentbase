@@ -106,6 +106,40 @@ const Epic = defineModel("Epic", {
 
 The `prefix` determines which files match this model. Files whose path starts with `"epics"` are Epics. If omitted, the prefix is auto-pluralized from the name (`"Epic"` -> `"epics"`).
 
+#### Explicit Model Assignment with `_model`
+
+Documents at the root of a collection (not in a subfolder) can't be matched by prefix. You can explicitly assign a model by adding `_model` to the frontmatter:
+
+```yaml
+---
+_model: Epic
+title: Platform Migration
+status: created
+---
+```
+
+The `_model` key takes priority over prefix matching, so this works even if the file lives outside the model's prefix folder.
+
+#### The Base Model
+
+Every collection automatically registers a built-in `Base` model as a catch-all. Documents that don't match any other model (by `_model` or prefix) are assigned to Base. You can query these unmatched documents:
+
+```ts
+import { Base } from "contentbase";
+
+const misc = await collection.query(Base).fetchAll();
+```
+
+If you want to customize the Base model (e.g. add a meta schema), register your own before calling `load()`:
+
+```ts
+const MyBase = defineModel("Base", {
+  meta: z.object({ tags: z.array(z.string()).optional() }),
+});
+collection.register(MyBase);
+await collection.load(); // won't auto-register the built-in Base
+```
+
 #### Path Patterns
 
 Models can declare Express-style path patterns to automatically infer meta values from the document's file path:

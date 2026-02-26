@@ -128,13 +128,9 @@ export class CollectionQuery<
     let results: InferModelInstance<TDef>[] = [];
 
     for (const pathId of collection.available) {
-      // Filter by model type BEFORE creating instances (fixes original perf bug)
-      const item = collection.items.get(pathId)!;
-      const matchesModel = definition.match
-        ? definition.match({ id: pathId, meta: item.meta })
-        : pathId.startsWith(definition.prefix);
-
-      if (!matchesModel) continue;
+      // Delegate all matching logic to collection (handles _model meta, prefix, Base fallback)
+      const matchedDef = collection.findModelDefinition(pathId);
+      if (matchedDef?.name !== definition.name) continue;
 
       const doc = collection.document(pathId);
       const instance = createModelInstance(doc, definition, collection);

@@ -15,6 +15,7 @@ export type {
 
 // defineModel and helpers
 export { defineModel } from "./define-model";
+export { Base } from "./base-model";
 export { section } from "./section";
 export { hasMany, belongsTo } from "./relationships/index";
 

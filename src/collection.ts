@@ -6,6 +6,7 @@ import { CollectionQuery } from "./query/collection-query";
 import { createModelInstance } from "./model-instance";
 import { readDirectory } from "./utils/read-directory";
 import { pluralize } from "./utils/inflect";
+import { Base } from "./base-model";
 import type {
   ModelDefinition,
   CollectionItem,
@@ -204,6 +205,11 @@ export class Collection {
       await this.#discoverModels();
     }
 
+    // Auto-register Base model as catch-all if not already registered
+    if (!this.#models.has("Base")) {
+      this.register(Base);
+    }
+
     if (this.#loaded && refresh) {
       this.#items.clear();
     }
@@ -326,14 +332,28 @@ export class Collection {
     const item = this.#items.get(pathId);
     if (!item) return undefined;
 
+    // 1. Explicit _model meta key takes priority
+    if (item.meta._model && typeof item.meta._model === "string") {
+      const explicit = this.#models.get(item.meta._model);
+      if (explicit) return explicit;
+    }
+
+    // 2. Check non-Base models by match/prefix
+    let baseModel: ModelDefinition<any, any, any, any, any> | undefined;
     for (const def of this.#models.values()) {
+      if (def.name === "Base") {
+        baseModel = def;
+        continue;
+      }
       if (def.match) {
         if (def.match({ id: pathId, meta: item.meta })) return def;
       } else {
         if (pathId.startsWith(def.prefix)) return def;
       }
     }
-    return undefined;
+
+    // 3. Fall back to Base model
+    return baseModel;
   }
 
   // ─── Querying ───
