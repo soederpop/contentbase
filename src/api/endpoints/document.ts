@@ -75,6 +75,11 @@ export const putSchema = z.object({
 })
 
 export async function put(params: any, ctx: any) {
+  if (ctx.container._contentbaseReadOnly) {
+    ctx.response.status(403)
+    return { error: 'Server is running in read-only mode' }
+  }
+
   const collection = ctx.container._contentbaseCollection
   const pathId = ctx.params.pathId
 
@@ -101,6 +106,11 @@ export const patchSchema = z.object({
 })
 
 export async function patch(params: any, ctx: any) {
+  if (ctx.container._contentbaseReadOnly) {
+    ctx.response.status(403)
+    return { error: 'Server is running in read-only mode' }
+  }
+
   const collection = ctx.container._contentbaseCollection
   const pathId = ctx.params.pathId
 
@@ -141,6 +151,11 @@ export async function patch(params: any, ctx: any) {
 }
 
 async function del(_params: any, ctx: any) {
+  if (ctx.container._contentbaseReadOnly) {
+    ctx.response.status(403)
+    return { error: 'Server is running in read-only mode' }
+  }
+
   const collection = ctx.container._contentbaseCollection
   const pathId = ctx.params.pathId
 

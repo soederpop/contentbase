@@ -15,6 +15,7 @@ const argsSchema = z.object({
   force: z.boolean().default(false),
   anyPort: z.boolean().default(false),
   open: z.boolean().default(false),
+  readOnly: z.boolean().default(false),
 })
 
 async function handler(options: z.infer<typeof argsSchema>, context: { container: any }) {
@@ -31,6 +32,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
   // Attach collection to container so endpoints can access it
   container._contentbaseCollection = collection
+  container._contentbaseReadOnly = options.readOnly
 
   // ---------------------------------------------------------------------------
   // Port handling
@@ -141,6 +143,9 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   console.log(`Collection: ${collection.rootPath}`)
   console.log(`Models: ${modelNames.join(', ') || '(none)'}`)
   console.log(`Documents: ${collection.available.length}`)
+  if (options.readOnly) {
+    console.log(`Mode: read-only (write endpoints disabled)`)
+  }
   console.log(`OpenAPI spec: http://localhost:${port}/openapi.json`)
 
   if (resolvedStaticDir) {

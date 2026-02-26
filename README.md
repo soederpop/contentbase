@@ -690,6 +690,9 @@ cbase serve
 
 # Custom port, specific content folder
 cbase serve --port 9000 --contentFolder ./sdlc
+
+# Read-only mode: disables all write endpoints (POST/PUT/PATCH/DELETE)
+cbase serve --read-only
 ```
 
 **Built-in endpoints:**
@@ -708,6 +711,8 @@ cbase serve --port 9000 --contentFolder ./sdlc
 | `GET/POST /api/actions` | List or execute actions |
 | `GET /docs/:path.json\|.md\|.html` | Content-negotiated doc serving |
 | `GET /openapi.json` | Auto-generated OpenAPI 3.1 spec |
+
+When `--read-only` is passed, all mutating endpoints return `403 Forbidden`. This includes `POST /api/documents`, `PUT/PATCH/DELETE /api/documents/:pathId`, and `POST /api/actions`. Read endpoints are unaffected.
 
 You can also add your own endpoints by placing files in an `endpoints/` directory. See [CLI.md](./CLI.md#user-defined-endpoints) for details.
 

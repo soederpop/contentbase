@@ -15,6 +15,11 @@ export const postSchema = z.object({
 })
 
 export async function post(params: any, ctx: any) {
+  if (ctx.container._contentbaseReadOnly) {
+    ctx.response.status(403)
+    return { error: 'Server is running in read-only mode' }
+  }
+
   const collection = ctx.container._contentbaseCollection
 
   if (!collection.availableActions.includes(params.name)) {
