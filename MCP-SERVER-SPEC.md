@@ -149,6 +149,28 @@ return results.map(r => r.toJSON(input.select));
 
 Iterates `collection.documents`, calls `doc.toText()` or `doc.content`, and does string/regex matching. Returns matching document IDs with surrounding context snippets.
 
+**`text_search`** — File-level text search using ripgrep.
+
+```json
+{
+  "name": "text_search",
+  "description": "Search file contents with pattern matching using ripgrep. Returns distinct file matches by default, or line-level detail with expanded=true.",
+  "inputSchema": {
+    "properties": {
+      "pattern": { "type": "string", "description": "Text or regex pattern to search for" },
+      "expanded": { "type": "boolean", "description": "Return line-level matches instead of just file paths", "default": false },
+      "include": { "type": "string", "description": "Glob filter (e.g. '*.md')" },
+      "exclude": { "type": "string", "description": "Glob filter (e.g. 'node_modules')" },
+      "ignoreCase": { "type": "boolean", "description": "Case insensitive search", "default": false },
+      "maxResults": { "type": "number", "description": "Limit number of results" }
+    },
+    "required": ["pattern"]
+  }
+}
+```
+
+Returns `{ files: string[], count: number }` by default, or `{ files: [{ file, matches: [{ line, column?, content }] }], count }` when `expanded` is true.
+
 ### Validation Tools
 
 **`validate`** — Validate one or more documents.

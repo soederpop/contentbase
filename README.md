@@ -663,6 +663,7 @@ cbase extract <glob> --sections "A, B"        # extract specific sections from m
 cbase summary                                 # generate MODELS.md and TABLE-OF-CONTENTS.md
 cbase teach                                   # output combined documentation for LLM context
 cbase action <name>                           # run a named action
+cbase text-search <pattern>                   # search file contents with pattern matching
 cbase serve                                   # start HTTP server with REST API and doc serving
 cbase mcp                                     # start MCP server for AI agent integration
 cbase console                                 # interactive REPL with collection in scope
@@ -701,7 +702,8 @@ cbase serve --port 9000 --contentFolder ./sdlc
 | `GET/POST/PUT/PATCH/DELETE /api/documents/:pathId` | Document CRUD |
 | `GET /api/query?model=&where=&select=` | Query model instances (flat condition format) |
 | `POST /api/query` | Query with JSON DSL body (MongoDB-style) |
-| `GET /api/search?pattern=` | Full-text regex search |
+| `GET /api/search?pattern=` | Full-text regex search across documents |
+| `GET /api/text-search?pattern=` | File-level text search (`expanded=true` for line detail) |
 | `GET /api/validate?pathId=` | Validate against schema |
 | `GET/POST /api/actions` | List or execute actions |
 | `GET /docs/:path.json\|.md\|.html` | Content-negotiated doc serving |

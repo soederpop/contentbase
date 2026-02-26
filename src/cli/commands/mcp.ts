@@ -291,6 +291,45 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     },
   })
 
+  mcpServer.tool('text_search', {
+    description: 'Search file contents with pattern matching using ripgrep. Returns distinct file matches by default, or line-level detail with expanded=true.',
+    schema: z.object({
+      pattern: z.string().describe('Text or regex pattern to search for'),
+      expanded: z.boolean().default(false).describe('Return line-level matches instead of just file paths'),
+      include: z.string().optional().describe('Glob filter (e.g. "*.md")'),
+      exclude: z.string().optional().describe('Glob filter (e.g. "node_modules")'),
+      ignoreCase: z.boolean().default(false).describe('Case insensitive search'),
+      maxResults: z.number().optional().describe('Limit number of results'),
+    }),
+    handler: async (args) => {
+      const grep = container.feature('grep')
+      const searchPath = collection.rootPath
+
+      const grepOpts: any = {
+        path: searchPath,
+        ignoreCase: args.ignoreCase,
+        maxResults: args.maxResults,
+        include: args.include,
+        exclude: args.exclude,
+      }
+
+      if (!args.expanded) {
+        const files = await grep.filesContaining(args.pattern, grepOpts)
+        return textResult(JSON.stringify({ files, count: files.length }, null, 2))
+      }
+
+      const results = await grep.search({ ...grepOpts, pattern: args.pattern })
+      const grouped = new Map<string, Array<{ line: number; column?: number; content: string }>>()
+      for (const match of results) {
+        if (!grouped.has(match.file)) grouped.set(match.file, [])
+        grouped.get(match.file)!.push({ line: match.line, column: match.column, content: match.content })
+      }
+
+      const files = Array.from(grouped.entries()).map(([file, matches]) => ({ file, matches }))
+      return textResult(JSON.stringify({ files, count: files.length }, null, 2))
+    },
+  })
+
   mcpServer.tool('validate', {
     description: 'Validate a document against its model schema. Returns validation result with any errors.',
     schema: z.object({

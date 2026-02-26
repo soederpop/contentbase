@@ -245,6 +245,63 @@ collection.action("rebuild-index", async (coll) => {
 
 ---
 
+## Search
+
+### `cbase text-search <pattern>`
+
+Search file contents within the content folder using pattern matching. Powered by ripgrep (with grep fallback).
+
+**Arguments:**
+- `pattern` (required) — Text or regex pattern to search for
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--expanded` | `false` | Show line-level matches (default: distinct files only) |
+| `--include` | | Glob filter (e.g. `"*.md"`) |
+| `--exclude` | | Glob filter (e.g. `"node_modules"`) |
+| `--ignoreCase` | `false` | Case insensitive search |
+| `--maxResults` | | Limit number of results |
+
+```bash
+# Find files containing "TODO"
+cbase text-search "TODO"
+
+# Show line-level detail
+cbase text-search "TODO" --expanded
+
+# Filter to markdown, case insensitive
+cbase text-search "deploy" --include "*.md" --ignoreCase
+```
+
+**Example output (default):**
+```
+3 file(s) match:
+
+  goals/launch-website.md
+  plans/demo-setup.mdx
+  ideas/main-process-manager.md
+```
+
+**Example output (--expanded):**
+```
+3 file(s), 5 match(es):
+
+  goals/launch-website.md
+    12: TODO: finalize deployment target
+    45: TODO: add SSL certificate
+
+  plans/demo-setup.mdx
+    8: TODO: verify staging environment
+
+  ideas/main-process-manager.md
+    3: TODO: research process supervision patterns
+    22: TODO: define restart policy
+```
+
+---
+
 ## Servers
 
 ### `cbase serve`
@@ -306,6 +363,7 @@ All endpoints return JSON unless otherwise noted.
 |--------|------|-------------|
 | `GET` | `/api/query` | Query model instances (`?model=&where=&select=`) |
 | `GET` | `/api/search` | Full-text regex search (`?pattern=&model?&caseSensitive?`) |
+| `GET` | `/api/text-search` | File-level text search (`?pattern=&expanded?&include?&exclude?&ignoreCase?&maxResults?`) |
 
 **Validation:**
 
@@ -352,8 +410,17 @@ curl localhost:8000/api/documents/epics/authentication
 # Query stories by status
 curl "localhost:8000/api/query?model=Story&where=[{\"path\":\"meta.status\",\"value\":\"created\"}]"
 
-# Search for a term
+# Search for a term (document-level)
 curl "localhost:8000/api/search?pattern=login"
+
+# Text search — files only (default)
+curl "localhost:8000/api/text-search?pattern=login"
+
+# Text search — expanded with line-level matches
+curl "localhost:8000/api/text-search?pattern=login&expanded=true"
+
+# Text search — filter to markdown files, case insensitive
+curl "localhost:8000/api/text-search?pattern=TODO&include=*.md&ignoreCase=true"
 
 # Validate a document
 curl "localhost:8000/api/validate?pathId=epics/authentication"
@@ -420,7 +487,7 @@ cbase mcp --transport http --port 3003
 cbase mcp --contentFolder ./sdlc
 ```
 
-**MCP Tools provided:** `inspect`, `list_documents`, `query`, `search_content`, `validate`, `create_document`, `update_document`, `update_section`, `delete_document`, `run_action`
+**MCP Tools provided:** `inspect`, `list_documents`, `query`, `search_content`, `text_search`, `validate`, `create_document`, `update_document`, `update_section`, `delete_document`, `run_action`
 
 **MCP Resources:** `contentbase://schema`, `contentbase://toc`, `contentbase://models-summary`, `contentbase://primer`, and per-document resources at `contentbase://documents/{pathId}`
 
