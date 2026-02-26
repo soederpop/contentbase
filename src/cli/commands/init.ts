@@ -25,7 +25,7 @@ export const Post = defineModel("Post", {
   )
 
   await fs.writeFile(
-    path.join(dir, 'posts', 'hello-world.mdx'),
+    path.join(dir, 'posts', 'hello-world.md'),
     `---
 status: draft
 author: me
@@ -55,7 +55,7 @@ collection.register(Post);
   console.log(`Created contentbase project at ${dir}`)
   console.log(`  ${name}/models.ts`)
   console.log(`  ${name}/index.ts`)
-  console.log(`  ${name}/posts/hello-world.mdx`)
+  console.log(`  ${name}/posts/hello-world.md`)
 }
 
 commands.register('init', {

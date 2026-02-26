@@ -120,7 +120,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
   const slug = kebabCase(title.toLowerCase())
   const pathId = `${def.prefix}/${slug}`
-  const filePath = path.resolve(collection.rootPath, `${pathId}.mdx`)
+  const filePath = path.resolve(collection.rootPath, `${pathId}.md`)
 
   await fs.mkdir(path.dirname(filePath), { recursive: true })
   await fs.writeFile(filePath, content, 'utf8')

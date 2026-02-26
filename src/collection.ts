@@ -373,7 +373,7 @@ export class Collection {
     pathId: string,
     options: { content: string; extension?: string }
   ): Promise<CollectionItem> {
-    const extension = options.extension ?? ".mdx";
+    const extension = options.extension ?? ".md";
     const { data, content } = matter(options.content);
 
     if (!this.#items.has(pathId)) {
@@ -400,6 +400,9 @@ export class Collection {
     item.meta = data;
     item.updatedAt = new Date();
 
+    // Invalidate cached Document so the next query rebuilds from fresh data
+    this.#documents.delete(pathId);
+
     return item;
   }
 
@@ -419,7 +422,7 @@ export class Collection {
 
   async readItem(
     pathId: string,
-    extension: string = "mdx"
+    extension: string = "md"
   ): Promise<CollectionItem> {
     let filePath: string;
 

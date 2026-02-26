@@ -71,7 +71,7 @@ export class Document {
   }
 
   get path(): string {
-    return this.collection.resolve(this.id) + ".mdx";
+    return this.collection.resolve(this.id) + ".md";
   }
 
   // ─── Processor ───
