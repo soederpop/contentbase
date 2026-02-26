@@ -688,6 +688,9 @@ export class Collection {
       const def = defs[i];
       if (i > 0) lines.push("---", "");
       lines.push(`## ${pluralize(def.name)}`, "");
+      if (def.description) {
+        lines.push(def.description, "");
+      }
       lines.push(`**Prefix:** \`${def.prefix}\``, "");
 
       // Meta attributes

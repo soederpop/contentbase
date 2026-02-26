@@ -78,6 +78,7 @@ content/
 
 A model is a config object that describes one type of document. It declares:
 
+- **description** -- human-readable summary (auto-generated from schema if omitted)
 - **meta** -- a Zod schema for frontmatter
 - **sections** -- named extractions from heading-based sections
 - **relationships** -- `hasMany` / `belongsTo` links between models
@@ -88,6 +89,7 @@ A model is a config object that describes one type of document. It declares:
 ```ts
 const Epic = defineModel("Epic", {
   prefix: "epics",
+  description: "A project epic that groups related user stories.",
   meta: z.object({
     priority: z.enum(["low", "medium", "high"]).optional(),
     status: z.enum(["created", "in-progress", "complete"]).default("created"),
@@ -103,6 +105,8 @@ const Epic = defineModel("Epic", {
   },
 });
 ```
+
+If `description` is omitted, one is generated on first access from the model's schema: *"An Epic has metadata (priority, status), relationship (stories → Story), and computed property (isComplete)."*
 
 The `prefix` determines which files match this model. Files whose path starts with `"epics"` are Epics. If omitted, the prefix is auto-pluralized from the name (`"Epic"` -> `"epics"`).
 
@@ -821,7 +825,8 @@ collection.register(Post);
 | --- | --- |
 | `Collection` | Loads and manages a directory of documents |
 | `Document` | A single Markdown/MDX file with AST operations |
-| `defineModel()` | Create a typed model definition |
+| `defineModel()` | Create a typed model definition (accepts optional `description`, auto-generated if omitted) |
+| `generateDescription()` | Generate a human-readable model description from its schema |
 | `section()` | Declare a section extraction |
 | `hasMany()` | Declare a one-to-many relationship |
 | `belongsTo()` | Declare a many-to-one relationship |

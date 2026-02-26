@@ -104,6 +104,8 @@ export interface ModelDefinition<
   sections: TSections;
   relationships: TRelationships;
   computed: TComputed;
+  /** Human-readable description of this model, auto-generated if not provided */
+  description: string;
   match?: (doc: DocumentRef) => boolean;
   defaults?: Partial<z.input<TMeta>>;
   pattern?: string | string[];

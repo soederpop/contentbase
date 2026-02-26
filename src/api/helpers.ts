@@ -26,6 +26,7 @@ export function buildSchemaJSON(collection: Collection) {
     models[def.name] = {
       name: def.name,
       prefix: def.prefix,
+      description: def.description,
       fields,
       sections,
       relationships,
