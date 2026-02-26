@@ -6,6 +6,7 @@ import { commands } from '../registry.js'
 import { loadCollection } from '../load-collection.js'
 import { introspectMetaSchema, validateDocument } from '../../index.js'
 import { resolveModelDef, buildSchemaJSON } from '../../api/helpers.js'
+import { queryDSLSchema, executeQueryDSL } from '../../query/query-dsl.js'
 // MCPServer type comes from container.server('mcp', ...) at runtime
 
 const argsSchema = z.object({
@@ -181,71 +182,64 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
   mcpServer.tool('query', {
     description: [
-      'Query typed model instances with filtering. Supports operators:',
-      'eq (default), in, notIn, gt, lt, gte, lte, contains, startsWith, endsWith, regex, exists, notExists.',
-      'Paths can reference meta fields (e.g. "meta.status") or top-level properties (id, title, slug).',
+      'Query typed model instances with MongoDB-style filtering.',
+      'Where clause: keys are dot-notation paths, values are literals (implies $eq),',
+      'arrays (implies $in), or operator objects like { "$gt": 5 }.',
+      'Operators: $eq, $neq, $in, $notIn, $gt, $lt, $gte, $lte,',
+      '$contains, $startsWith, $endsWith, $regex, $exists.',
+      'Supports sort, limit, offset, select, and method (fetchAll/first/last/count).',
     ].join(' '),
     schema: z.object({
       model: z.string().describe('Model name to query'),
-      where: z.array(z.object({
-        path: z.string().describe('Dot-notation field path (e.g. "meta.status", "title")'),
-        operator: z.enum([
-          'eq', 'in', 'notIn', 'gt', 'lt', 'gte', 'lte',
-          'contains', 'startsWith', 'endsWith', 'regex',
-          'exists', 'notExists',
-        ]).default('eq'),
-        value: z.any().optional().describe('Value to compare against'),
-      })).optional().describe('Filter conditions'),
+      where: z.any().optional().describe(
+        'MongoDB-style where clause. Keys are field paths, values are literals (implicit $eq), arrays (implicit $in), or operator objects like { "$gt": 5 }. Also accepts legacy array format for backward compat.',
+      ),
+      sort: z.record(z.string(), z.enum(['asc', 'desc'])).optional().describe(
+        'Sort specification, e.g. { "meta.priority": "desc" }',
+      ),
       select: z.array(z.string()).optional().describe('Fields to include in output (default: all)'),
+      limit: z.number().optional().describe('Maximum results to return'),
+      offset: z.number().optional().describe('Number of results to skip'),
+      method: z.enum(['fetchAll', 'first', 'last', 'count']).optional().describe(
+        'Terminal operation (default: fetchAll)',
+      ),
     }),
     handler: async (args) => {
-      const def = resolveModelDef(collection, args.model)
-      if (!def) {
-        return errorResult(`Unknown model: ${args.model}. Available: ${modelDefs.map((d: any) => d.name).join(', ')}`)
-      }
-
-      let q = collection.query(def)
-
-      if (args.where) {
-        for (const condition of args.where) {
-          const { path: fieldPath, operator, value } = condition
-          switch (operator) {
-            case 'eq': q = q.where(fieldPath, value); break
-            case 'in': q = q.whereIn(fieldPath, value); break
-            case 'notIn': q = q.whereNotIn(fieldPath, value); break
-            case 'gt': q = q.whereGt(fieldPath, value); break
-            case 'lt': q = q.whereLt(fieldPath, value); break
-            case 'gte': q = q.whereGte(fieldPath, value); break
-            case 'lte': q = q.whereLte(fieldPath, value); break
-            case 'contains': q = q.whereContains(fieldPath, value); break
-            case 'startsWith': q = q.whereStartsWith(fieldPath, value); break
-            case 'endsWith': q = q.whereEndsWith(fieldPath, value); break
-            case 'regex': q = q.whereRegex(fieldPath, value); break
-            case 'exists': q = q.whereExists(fieldPath); break
-            case 'notExists': q = q.whereNotExists(fieldPath); break
-          }
-        }
-      }
-
-      const results = await q.fetchAll()
-
-      const output = results.map((instance: any) => {
-        const json = instance.toJSON()
-        if (args.select && args.select.length > 0) {
-          const filtered: Record<string, any> = {}
-          for (const key of args.select) {
-            if (key in json) filtered[key] = json[key]
-            else if (key.startsWith('meta.') && json.meta) {
-              const metaKey = key.slice(5)
-              filtered[key] = json.meta[metaKey]
+      try {
+        // Backward compat: convert legacy array-style where to MongoDB-style
+        let whereClause = args.where
+        if (Array.isArray(whereClause)) {
+          const converted: Record<string, unknown> = {}
+          for (const cond of whereClause) {
+            const op = cond.operator || 'eq'
+            if (op === 'eq') {
+              converted[cond.path] = cond.value
+            } else if (op === 'notExists') {
+              converted[cond.path] = { $exists: false }
+            } else if (op === 'exists') {
+              converted[cond.path] = { $exists: true }
+            } else {
+              converted[cond.path] = { [`$${op}`]: cond.value }
             }
           }
-          return filtered
+          whereClause = converted
         }
-        return json
-      })
 
-      return textResult(JSON.stringify(output, null, 2))
+        const dsl = queryDSLSchema.parse({
+          model: args.model,
+          where: whereClause,
+          sort: args.sort,
+          select: args.select,
+          limit: args.limit,
+          offset: args.offset,
+          method: args.method,
+        })
+
+        const result = await executeQueryDSL(collection, dsl)
+        return textResult(JSON.stringify(result, null, 2))
+      } catch (error: any) {
+        return errorResult(error.message)
+      }
     },
   })
 
@@ -627,17 +621,25 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
         '| regex | Regex pattern match | `"^v\\\\d+"` |',
         '| exists / notExists | Field presence check | (no value needed) |',
         '',
-        '## Example',
+        '## Example (MongoDB-style DSL)',
         '',
         '```json',
         '{',
         '  "model": "Epic",',
-        '  "where": [',
-        '    { "path": "meta.status", "operator": "eq", "value": "active" },',
-        '    { "path": "meta.priority", "operator": "in", "value": ["high", "critical"] }',
-        '  ]',
+        '  "where": {',
+        '    "meta.status": "active",',
+        '    "meta.priority": { "$in": ["high", "critical"] }',
+        '  },',
+        '  "sort": { "meta.priority": "desc" },',
+        '  "limit": 10',
         '}',
         '```',
+        '',
+        'Where value shortcuts:',
+        '- Literal value → implicit $eq: `"meta.status": "active"`',
+        '- Array → implicit $in: `"meta.tags": ["a", "b"]`',
+        '- Operator object: `"meta.priority": { "$gt": 5 }`',
+        '- Multiple operators: `"meta.priority": { "$gte": 3, "$lte": 8 }`',
       ].join('\n')
 
       return [{ role: 'user' as const, content }]

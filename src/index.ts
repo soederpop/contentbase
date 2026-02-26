@@ -21,6 +21,13 @@ export { hasMany, belongsTo } from "./relationships/index";
 // Query
 export { CollectionQuery } from "./query/collection-query";
 export { QueryBuilder } from "./query/query-builder";
+export {
+  queryDSLSchema,
+  parseWhereClause,
+  parseSortClause,
+  executeQueryDSL,
+} from "./query/query-dsl";
+export type { QueryDSL } from "./query/query-dsl";
 
 // Model instance factory (advanced use)
 export { createModelInstance } from "./model-instance";

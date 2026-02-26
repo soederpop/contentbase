@@ -294,6 +294,9 @@ const results = await collection
   .query(Story)
   .whereIn("meta.status", ["created", "in-progress"])
   .whereExists("meta.epic")
+  .sort("meta.status", "asc")
+  .limit(10)
+  .offset(0)
   .fetchAll();
 
 // Convenience accessors
@@ -304,6 +307,60 @@ const count = await collection.query(Epic).count();
 Available operators: `eq`, `neq`, `in`, `notIn`, `gt`, `lt`, `gte`, `lte`, `contains`, `startsWith`, `endsWith`, `regex`, `exists`.
 
 Queries filter by model type **before** creating instances, so you only pay the parsing cost for matching documents.
+
+### JSON Query DSL
+
+For querying over the wire (REST API, MCP server) without executing arbitrary code, Contentbase provides a MongoDB-style JSON query DSL:
+
+```json
+{
+  "model": "Epic",
+  "where": {
+    "meta.status": "created",
+    "meta.priority": { "$gt": 3 }
+  },
+  "sort": { "meta.priority": "desc" },
+  "select": ["id", "title", "meta.status"],
+  "limit": 10,
+  "offset": 0
+}
+```
+
+**Where value shortcuts:**
+
+| Value type | Interpretation | Example |
+|------------|---------------|---------|
+| Literal (string, number, boolean, null) | Implicit `$eq` | `"meta.status": "active"` |
+| Array | Implicit `$in` | `"meta.tags": ["a", "b"]` |
+| Operator object | Explicit operator | `"meta.priority": { "$gt": 5 }` |
+| Multiple operators | AND on same field | `"meta.priority": { "$gte": 3, "$lte": 8 }` |
+
+**Available operators:** `$eq`, `$neq`, `$in`, `$notIn`, `$gt`, `$lt`, `$gte`, `$lte`, `$contains`, `$startsWith`, `$endsWith`, `$regex`, `$exists`
+
+**Options:**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `model` | string | *(required)* | Model name or prefix |
+| `where` | object | -- | MongoDB-style filter conditions |
+| `sort` | object or array | -- | `{ "field": "asc"\|"desc" }` or `[{ "path": "...", "direction": "asc" }]` |
+| `select` | string[] | -- | Fields to include in output |
+| `limit` | number | -- | Maximum results to return |
+| `offset` | number | -- | Number of results to skip |
+| `method` | string | `"fetchAll"` | `"fetchAll"`, `"first"`, `"last"`, or `"count"` |
+
+Use via `POST /api/query` with a JSON body, or through the MCP `query` tool. The DSL parser is also available programmatically:
+
+```ts
+import { executeQueryDSL, queryDSLSchema } from "contentbase";
+
+const result = await executeQueryDSL(collection, {
+  model: "Epic",
+  where: { "meta.status": "created" },
+  sort: { title: "asc" },
+  limit: 5,
+});
+```
 
 ---
 
@@ -642,7 +699,8 @@ cbase serve --port 9000 --contentFolder ./sdlc
 | `GET /api/models` | All model definitions |
 | `GET /api/documents` | List documents (filter with `?model=`) |
 | `GET/POST/PUT/PATCH/DELETE /api/documents/:pathId` | Document CRUD |
-| `GET /api/query?model=&where=&select=` | Query model instances |
+| `GET /api/query?model=&where=&select=` | Query model instances (flat condition format) |
+| `POST /api/query` | Query with JSON DSL body (MongoDB-style) |
 | `GET /api/search?pattern=` | Full-text regex search |
 | `GET /api/validate?pathId=` | Validate against schema |
 | `GET/POST /api/actions` | List or execute actions |
@@ -729,6 +787,9 @@ collection.register(Post);
 | `parse()` | Parse a file path or markdown string into a queryable `ParsedDocument` |
 | `extractSections()` | Combine sections from multiple documents into one |
 | `CollectionQuery` | Fluent query builder for model instances |
+| `queryDSLSchema` | Zod schema for validating JSON query DSL input |
+| `parseWhereClause()` | Parse MongoDB-style where object into internal conditions |
+| `executeQueryDSL()` | Execute a JSON query DSL against a collection |
 | `AstQuery` | MDAST query wrapper (select, visit, find) |
 | `NodeShortcuts` | Convenience getters for common AST nodes |
 | `createModelInstance()` | Low-level factory for model instances |

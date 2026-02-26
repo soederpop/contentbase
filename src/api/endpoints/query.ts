@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { resolveModelDef } from '../helpers.js'
+import { queryDSLSchema, executeQueryDSL } from '../../query/query-dsl.js'
 
 export const path = '/api/query'
 export const description = 'Query model instances with filtering'
@@ -10,6 +11,8 @@ export const getSchema = z.object({
   where: z.string().optional(),
   select: z.string().optional(),
 })
+
+export const postSchema = queryDSLSchema
 
 export async function get(params: any, ctx: any) {
   const collection = ctx.container._contentbaseCollection
@@ -68,4 +71,16 @@ export async function get(params: any, ctx: any) {
     }
     return json
   })
+}
+
+export async function post(params: any, ctx: any) {
+  const collection = ctx.container._contentbaseCollection
+
+  try {
+    const dsl = queryDSLSchema.parse(params)
+    return await executeQueryDSL(collection, dsl)
+  } catch (error: any) {
+    ctx.response.status(400)
+    return { error: error.message }
+  }
 }

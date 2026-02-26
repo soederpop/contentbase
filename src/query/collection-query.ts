@@ -26,6 +26,8 @@ export class CollectionQuery<
   #definition: TDef;
   #queryBuilder: QueryBuilder;
   #sorts: SortSpec[] = [];
+  #limit: number | undefined;
+  #offset: number | undefined;
 
   constructor(collection: Collection, definition: TDef) {
     this.#collection = collection;
@@ -107,13 +109,23 @@ export class CollectionQuery<
     return this;
   }
 
+  limit(n: number): this {
+    this.#limit = n;
+    return this;
+  }
+
+  offset(n: number): this {
+    this.#offset = n;
+    return this;
+  }
+
   async fetchAll(): Promise<InferModelInstance<TDef>[]> {
     const collection = this.#collection;
     if (!collection.loaded) await collection.load();
 
     const definition = this.#definition;
     const conditions = this.#queryBuilder.conditions;
-    const results: InferModelInstance<TDef>[] = [];
+    let results: InferModelInstance<TDef>[] = [];
 
     for (const pathId of collection.available) {
       // Filter by model type BEFORE creating instances (fixes original perf bug)
@@ -151,6 +163,14 @@ export class CollectionQuery<
         }
         return 0;
       });
+    }
+
+    // Apply pagination
+    if (this.#offset && this.#offset > 0) {
+      results = results.slice(this.#offset);
+    }
+    if (this.#limit !== undefined && this.#limit >= 0) {
+      results = results.slice(0, this.#limit);
     }
 
     return results;
