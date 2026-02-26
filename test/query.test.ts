@@ -164,4 +164,33 @@ describe("CollectionQuery", () => {
     const all = await collection.query(Epic).fetchAll();
     expect(all.length).toBe(2);
   });
+
+  it("sort orders results ascending by default", async () => {
+    const epics = await collection.query(Epic).sort("title").fetchAll();
+    expect(epics.length).toBe(2);
+    expect(epics[0].title.localeCompare(epics[1].title)).toBeLessThan(0);
+  });
+
+  it("sort orders results descending", async () => {
+    const epics = await collection.query(Epic).sort("title", "desc").fetchAll();
+    expect(epics.length).toBe(2);
+    expect(epics[0].title.localeCompare(epics[1].title)).toBeGreaterThan(0);
+  });
+
+  it("sort handles null values (pushed to end in asc)", async () => {
+    // authentication has priority "high", searching-and-browsing has no priority
+    const epics = await collection.query(Epic).sort("meta.priority").fetchAll();
+    expect(epics[0].meta.priority).toBe("high");
+    expect(epics[1].meta.priority).toBeUndefined();
+  });
+
+  it("sort chains with where", async () => {
+    const epics = await collection
+      .query(Epic)
+      .where("meta.status", "created")
+      .sort("title", "desc")
+      .fetchAll();
+    expect(epics.length).toBe(2);
+    expect(epics[0].title.localeCompare(epics[1].title)).toBeGreaterThan(0);
+  });
 });

@@ -14,12 +14,18 @@ import type { ModelDefinition, InferModelInstance } from "../types";
  *     .where("meta.priority", "high")
  *     .fetchAll();
  */
+interface SortSpec {
+  path: string;
+  direction: "asc" | "desc";
+}
+
 export class CollectionQuery<
   TDef extends ModelDefinition<any, any, any, any, any>,
 > {
   #collection: Collection;
   #definition: TDef;
   #queryBuilder: QueryBuilder;
+  #sorts: SortSpec[] = [];
 
   constructor(collection: Collection, definition: TDef) {
     this.#collection = collection;
@@ -96,6 +102,11 @@ export class CollectionQuery<
     return this;
   }
 
+  sort(path: string, direction: "asc" | "desc" = "asc"): this {
+    this.#sorts.push({ path, direction });
+    return this;
+  }
+
   async fetchAll(): Promise<InferModelInstance<TDef>[]> {
     const collection = this.#collection;
     if (!collection.loaded) await collection.load();
@@ -125,6 +136,21 @@ export class CollectionQuery<
       if (passesAll) {
         results.push(instance);
       }
+    }
+
+    if (this.#sorts.length > 0) {
+      results.sort((a, b) => {
+        for (const { path, direction } of this.#sorts) {
+          const aVal = getNestedValue(a, path);
+          const bVal = getNestedValue(b, path);
+          if (aVal === bVal) continue;
+          if (aVal == null) return direction === "asc" ? 1 : -1;
+          if (bVal == null) return direction === "asc" ? -1 : 1;
+          const cmp = aVal < bVal ? -1 : 1;
+          return direction === "asc" ? cmp : -cmp;
+        }
+        return 0;
+      });
     }
 
     return results;
