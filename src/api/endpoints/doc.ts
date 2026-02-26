@@ -20,9 +20,70 @@ async function renderHtml(markdown: string): Promise<string> {
   return String(result)
 }
 
+function rewriteDocLinks(html: string): string {
+  return html.replace(/href="([^"]*\.(?:md|mdx))"/g, (match, href) => {
+    if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')) {
+      return match
+    }
+    // Strip the .md/.mdx extension — the /docs endpoint handles extensionless paths
+    return `href="${href.replace(/\.mdx?$/, '')}"`
+  })
+}
+
 export async function get(params: any, ctx: any) {
   const collection = ctx.container._contentbaseCollection
-  let docPath: string = params.docPath
+  let docPath: string = params.docPath || ''
+
+  // Serve table of contents at /docs/ or /docs
+  if (!docPath) {
+    const tocMarkdown = collection.tableOfContents({ title: 'Table of Contents', basePath: '.' })
+    const tocHtml = rewriteDocLinks(await renderHtml(tocMarkdown))
+    const accept = ctx.request.headers?.accept || ''
+
+    if (accept.includes('text/html') || !accept.includes('application/json')) {
+      const page = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Table of Contents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    line-height: 1.7;
+    color: #1a1a2e;
+    background: #fafafa;
+  }
+  h1 { font-size: 2rem; font-weight: 600; margin: 2rem 0 1rem; color: #0f0f23; }
+  h2 { font-size: 1.5rem; font-weight: 600; margin: 2.5rem 0 0.75rem; color: #16163a; border-bottom: 1px solid #e2e2e8; padding-bottom: 0.4rem; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul { padding-left: 1.5rem; margin: 0.5rem 0 1rem; }
+  li { margin: 0.3rem 0; }
+</style>
+</head>
+<body>
+${tocHtml}
+</body></html>`
+      ctx.response.type('text/html')
+      ctx.response.send(page)
+      return
+    }
+
+    // JSON: return structured TOC
+    return {
+      title: 'Table of Contents',
+      documents: collection.available.map((id: string) => {
+        const doc = collection.document(id)
+        const modelDef = collection.findModelDefinition(id)
+        return { id, title: doc.title, model: modelDef?.name || null }
+      })
+    }
+  }
 
   // Determine format from extension or Accept header
   let format = 'json'
@@ -57,7 +118,7 @@ export async function get(params: any, ctx: any) {
       return
     }
     case 'html': {
-      const html = await renderHtml(doc.content)
+      const html = rewriteDocLinks(await renderHtml(doc.content))
       const page = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${doc.title}</title>
@@ -144,7 +205,7 @@ ${html}
       return
     }
     default: {
-      return {
+      const result: Record<string, unknown> = {
         id: doc.id,
         title: doc.title,
         meta: doc.meta,
@@ -152,6 +213,48 @@ ${html}
         outline: doc.toOutline(),
         model: modelDef?.name || null,
       }
+
+      if (modelDef) {
+        const instance = collection.getModel(docPath, modelDef)
+        const sectionKeys = modelDef.sections ? Object.keys(modelDef.sections) : []
+        const computedKeys = modelDef.computed ? Object.keys(modelDef.computed) : []
+        const relationshipKeys = modelDef.relationships ? Object.keys(modelDef.relationships) : []
+
+        if (sectionKeys.length) {
+          result.sections = {}
+          for (const key of sectionKeys) {
+            try {
+              (result.sections as any)[key] = instance.sections[key]
+            } catch {}
+          }
+        }
+
+        if (computedKeys.length) {
+          result.computed = {}
+          for (const key of computedKeys) {
+            try {
+              (result.computed as any)[key] = instance.computed[key]
+            } catch {}
+          }
+        }
+
+        if (relationshipKeys.length) {
+          result.relationships = {}
+          for (const key of relationshipKeys) {
+            try {
+              const rel = (instance.relationships as any)[key]
+              if ('fetchAll' in rel) {
+                (result.relationships as any)[key] = rel.fetchAll().map((i: any) => ({ id: i.id, title: i.title }))
+              } else if ('fetch' in rel) {
+                const parent = rel.fetch()
+                (result.relationships as any)[key] = parent ? { id: parent.id, title: parent.title } : null
+              }
+            } catch {}
+          }
+        }
+      }
+
+      return result
     }
   }
 }

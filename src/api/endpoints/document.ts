@@ -17,7 +17,7 @@ export async function get(params: any, ctx: any) {
   const doc = collection.document(pathId)
   const modelDef = collection.findModelDefinition(pathId)
 
-  return {
+  const result: Record<string, unknown> = {
     id: doc.id,
     title: doc.title,
     meta: doc.meta,
@@ -25,6 +25,48 @@ export async function get(params: any, ctx: any) {
     outline: doc.toOutline(),
     model: modelDef?.name || null,
   }
+
+  if (modelDef) {
+    const instance = collection.getModel(pathId, modelDef)
+    const sectionKeys = modelDef.sections ? Object.keys(modelDef.sections) : []
+    const computedKeys = modelDef.computed ? Object.keys(modelDef.computed) : []
+    const relationshipKeys = modelDef.relationships ? Object.keys(modelDef.relationships) : []
+
+    if (sectionKeys.length) {
+      result.sections = {}
+      for (const key of sectionKeys) {
+        try {
+          (result.sections as any)[key] = instance.sections[key]
+        } catch {}
+      }
+    }
+
+    if (computedKeys.length) {
+      result.computed = {}
+      for (const key of computedKeys) {
+        try {
+          (result.computed as any)[key] = instance.computed[key]
+        } catch {}
+      }
+    }
+
+    if (relationshipKeys.length) {
+      result.relationships = {}
+      for (const key of relationshipKeys) {
+        try {
+          const rel = (instance.relationships as any)[key]
+          if ('fetchAll' in rel) {
+            (result.relationships as any)[key] = rel.fetchAll().map((i: any) => ({ id: i.id, title: i.title }))
+          } else if ('fetch' in rel) {
+            const parent = rel.fetch()
+            (result.relationships as any)[key] = parent ? { id: parent.id, title: parent.title } : null
+          }
+        } catch {}
+      }
+    }
+  }
+
+  return result
 }
 
 export const putSchema = z.object({
