@@ -134,6 +134,9 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
           content: d.content,
           outline: d.toOutline(),
           model: modelDef?.name || null,
+          createdAt: d.createdAt,
+          updatedAt: d.updatedAt,
+          size: d.size,
         }, null, 2)
       },
     })
@@ -198,6 +201,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
         'Sort specification, e.g. { "meta.priority": "desc" }',
       ),
       select: z.array(z.string()).optional().describe('Fields to include in output (default: all)'),
+      scopes: z.array(z.string()).optional().describe('Named scopes to apply before filtering'),
       limit: z.number().optional().describe('Maximum results to return'),
       offset: z.number().optional().describe('Number of results to skip'),
       method: z.enum(['fetchAll', 'first', 'last', 'count']).optional().describe(
@@ -230,6 +234,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
           where: whereClause,
           sort: args.sort,
           select: args.select,
+          scopes: args.scopes,
           limit: args.limit,
           offset: args.offset,
           method: args.method,

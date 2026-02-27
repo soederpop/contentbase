@@ -23,6 +23,8 @@ export interface DefineModelConfig<
   sections?: TSections;
   relationships?: TRelationships;
   computed?: TComputed;
+  /** Named scopes — reusable query presets */
+  scopes?: Record<string, (query: any) => any>;
   match?: (doc: DocumentRef) => boolean;
   defaults?: Partial<z.input<TMeta>>;
   pattern?: string | string[];
@@ -80,6 +82,7 @@ export function defineModel<
     sections,
     relationships,
     computed,
+    scopes: config.scopes ?? {},
     match: config.match,
     defaults: config.defaults,
     pattern: config.pattern,
@@ -149,6 +152,9 @@ export function generateDescription(
   if (computedKeys.length > 0) {
     parts.push(`computed ${computedKeys.length === 1 ? "property" : "properties"} (${computedKeys.join(", ")})`);
   }
+
+  // Scopes — accessed from the definition at runtime, not passed as parameter
+  // to keep backward compat with existing callers
 
   if (parts.length === 0) {
     return `A ${name} document.`;

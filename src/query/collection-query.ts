@@ -104,6 +104,14 @@ export class CollectionQuery<
     return this;
   }
 
+  scope(name: string): this {
+    const scopeFn = (this.#definition as any).scopes?.[name];
+    if (!scopeFn) {
+      throw new Error(`Unknown scope "${name}" on model "${this.#definition.name}"`);
+    }
+    return scopeFn(this) as this;
+  }
+
   sort(path: string, direction: "asc" | "desc" = "asc"): this {
     this.#sorts.push({ path, direction });
     return this;

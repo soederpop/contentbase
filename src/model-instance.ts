@@ -168,6 +168,9 @@ export function createModelInstance<
       id: document.id,
       title: document.title,
       meta,
+      createdAt: document.createdAt,
+      updatedAt: document.updatedAt,
+      size: document.size,
     };
 
     // Include requested sections
@@ -213,6 +216,15 @@ export function createModelInstance<
     },
     get slug() {
       return document.slug;
+    },
+    get createdAt() {
+      return document.createdAt;
+    },
+    get updatedAt() {
+      return document.updatedAt;
+    },
+    get size() {
+      return document.size;
     },
     meta,
     sections,

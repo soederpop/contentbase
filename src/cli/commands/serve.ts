@@ -124,6 +124,13 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     await expressServer.useEndpoints(userEndpointsDir)
   }
 
+  // Redirect root to /docs/ table of contents when no static index.html exists
+  if (!resolvedStaticDir || !fs.existsSync(path.join(resolvedStaticDir, 'index.html'))) {
+    expressServer.app.get('/', (_req: any, res: any) => {
+      res.redirect('/docs/')
+    })
+  }
+
   // OpenAPI spec
   expressServer.serveOpenAPISpec({
     title: 'Contentbase API',

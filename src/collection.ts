@@ -234,6 +234,7 @@ export class Collection {
           path: filePath,
           createdAt: stat.ctime,
           updatedAt: stat.mtime,
+          size: stat.size,
         });
       })
     );
@@ -385,6 +386,7 @@ export class Collection {
         path: filePath,
         createdAt: new Date(),
         updatedAt: new Date(),
+        size: Buffer.byteLength(options.content, "utf8"),
       });
     }
 
@@ -399,6 +401,7 @@ export class Collection {
     item.content = content;
     item.meta = data;
     item.updatedAt = new Date();
+    item.size = Buffer.byteLength(options.content, "utf8");
 
     // Invalidate cached Document so the next query rebuilds from fresh data
     this.#documents.delete(pathId);
@@ -443,6 +446,7 @@ export class Collection {
       path: filePath,
       createdAt: stat.ctime,
       updatedAt: stat.mtime,
+      size: stat.size,
     };
 
     this.#items.set(pathId, item);

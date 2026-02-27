@@ -62,6 +62,18 @@ export class Document {
     return kebabCase(this.title.toLowerCase());
   }
 
+  get createdAt(): Date | undefined {
+    return this.collection.items.get(this.id)?.createdAt;
+  }
+
+  get updatedAt(): Date | undefined {
+    return this.collection.items.get(this.id)?.updatedAt;
+  }
+
+  get size(): number | undefined {
+    return this.collection.items.get(this.id)?.size;
+  }
+
   get rawContent(): string {
     if (Object.keys(this.#meta).length === 0) {
       return this.content;
@@ -388,12 +400,18 @@ export class Document {
     meta: Record<string, unknown>;
     content: string;
     ast: Root;
+    createdAt: Date | undefined;
+    updatedAt: Date | undefined;
+    size: number | undefined;
   } {
     return {
       id: this.id,
       meta: this.meta,
       content: this.content,
       ast: this.ast,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      size: this.size,
     };
   }
 

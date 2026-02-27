@@ -12,6 +12,7 @@ export interface CollectionItem {
   path: string;
   createdAt: Date;
   updatedAt: Date;
+  size: number;
 }
 
 /** Options when constructing a Collection */
@@ -106,6 +107,8 @@ export interface ModelDefinition<
   computed: TComputed;
   /** Human-readable description of this model, auto-generated if not provided */
   description: string;
+  /** Named scopes — reusable query presets */
+  scopes: Record<string, (query: any) => any>;
   match?: (doc: DocumentRef) => boolean;
   defaults?: Partial<z.input<TMeta>>;
   pattern?: string | string[];
@@ -137,6 +140,11 @@ export type InferModelInstance<
         readonly slug: string;
         readonly document: import("./document.js").Document;
         readonly collection: import("./collection.js").Collection;
+
+        // File metadata
+        readonly createdAt: Date | undefined;
+        readonly updatedAt: Date | undefined;
+        readonly size: number | undefined;
 
         // Typed meta from Zod schema
         readonly meta: z.infer<TMeta>;

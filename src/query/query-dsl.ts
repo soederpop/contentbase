@@ -77,6 +77,7 @@ export const queryDSLSchema = z.object({
   where: z.record(z.string(), whereValueSchema).optional(),
   sort: sortSchema.optional(),
   select: z.array(z.string()).optional(),
+  scopes: z.array(z.string()).optional(),
   limit: z.number().int().min(0).optional(),
   offset: z.number().int().min(0).optional(),
   method: z
@@ -198,6 +199,13 @@ export async function executeQueryDSL(
   }
 
   let q = collection.query(def);
+
+  // Apply scopes first
+  if (dsl.scopes) {
+    for (const name of dsl.scopes) {
+      q = q.scope(name);
+    }
+  }
 
   // Apply where conditions
   if (dsl.where) {
