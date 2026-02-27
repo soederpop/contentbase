@@ -16,6 +16,7 @@ const argsSchema = z.object({
   anyPort: z.boolean().default(false),
   open: z.boolean().default(false),
   readOnly: z.boolean().default(false),
+  refreshInterval: z.number().optional(),
 })
 
 async function handler(options: z.infer<typeof argsSchema>, context: { container: any }) {
@@ -176,6 +177,27 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       console.warn(`Could not open browser automatically: ${(error as Error).message}`)
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Collection refresh interval
+  // ---------------------------------------------------------------------------
+  const defaultInterval = container.isProduction ? 10 * 60 : 60 // seconds
+  const intervalSeconds = options.refreshInterval ?? defaultInterval
+
+  setInterval(async () => {
+    try {
+      const before = collection.available.length
+      await collection.load({ refresh: true })
+      const after = collection.available.length
+      if (after !== before) {
+        console.log(`[refresh] Collection rescanned: ${before} → ${after} documents`)
+      }
+    } catch (error) {
+      console.warn(`[refresh] Failed to rescan collection: ${(error as Error).message}`)
+    }
+  }, intervalSeconds * 1000)
+
+  console.log(`Refresh interval: every ${intervalSeconds}s`)
 }
 
 commands.register('serve', {
