@@ -27,7 +27,7 @@ export async function get(params: any, ctx: any) {
 
   return ids.map((id: string) => {
     const doc = collection.document(id)
-    return { id, title: doc.title, meta: doc.meta }
+    return { id, title: doc.title, meta: doc.meta, size: doc.size, createdAt: doc.createdAt, updatedAt: doc.updatedAt }
   })
 }
 
