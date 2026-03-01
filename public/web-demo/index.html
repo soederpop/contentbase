@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contentbase Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f14;
+      --surface: #1a1a24;
+      --surface2: #22222e;
+      --border: #2e2e3e;
+      --text: #e0e0e8;
+      --text-dim: #8888a0;
+      --accent: #7c6aef;
+      --accent-dim: #5a4ec0;
+      --green: #4ade80;
+      --orange: #fb923c;
+      --pink: #f472b6;
+      --blue: #60a5fa;
+      --mono: 'Fira Code', 'Cascadia Code', monospace;
+      --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Layout */
+    .app { display: flex; height: 100vh; overflow: hidden; }
+
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 1.25rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h1 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .sidebar-header .stats {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 0.25rem;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem 0;
+    }
+
+    .nav-section {
+      padding: 0.5rem 1rem 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.1s;
+      text-decoration: none;
+    }
+
+    .nav-item:hover { background: var(--surface2); }
+    .nav-item.active { background: var(--accent-dim); color: #fff; }
+
+    .nav-item .badge {
+      margin-left: auto;
+      font-size: 0.7rem;
+      font-family: var(--mono);
+      background: var(--surface2);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      color: var(--text-dim);
+    }
+
+    .nav-item.active .badge { background: rgba(255,255,255,0.15); color: #fff; }
+
+    .doc-list {
+      padding: 0;
+      list-style: none;
+    }
+
+    .doc-item {
+      display: block;
+      padding: 0.35rem 1rem 0.35rem 2rem;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: background 0.1s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .doc-item:hover { background: var(--surface2); color: var(--text); }
+    .doc-item.active { color: var(--accent); background: var(--surface2); }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .search-box {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 0.5rem 0.75rem 0.5rem 2rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-box input:focus { border-color: var(--accent); }
+
+    .search-box::before {
+      content: "\u26B2";
+      position: absolute;
+      left: 0.65rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 0;
+    }
+
+    .tab {
+      padding: 0.4rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      transition: all 0.1s;
+    }
+
+    .tab:first-child { border-radius: 6px 0 0 6px; }
+    .tab:last-child { border-radius: 0 6px 6px 0; }
+    .tab + .tab { border-left: none; }
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+
+    /* Panels */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Document view */
+    .doc-view { max-width: 52rem; }
+    .doc-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .meta-tag {
+      font-size: 0.75rem;
+      font-family: var(--mono);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      background: var(--surface2);
+      color: var(--text-dim);
+    }
+
+    .meta-tag .label { color: var(--text-dim); }
+    .meta-tag .value { color: var(--green); }
+    .meta-tag.model .value { color: var(--accent); }
+
+    .doc-body {
+      line-height: 1.75;
+    }
+
+    .doc-body h1 { font-size: 1.75rem; margin: 1.5rem 0 0.75rem; color: #fff; }
+    .doc-body h2 { font-size: 1.35rem; margin: 2rem 0 0.6rem; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+    .doc-body h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; color: #fff; }
+    .doc-body p { margin: 0 0 0.75rem; }
+    .doc-body a { color: var(--blue); }
+    .doc-body ul, .doc-body ol { padding-left: 1.5rem; margin: 0.5rem 0 1rem; }
+    .doc-body li { margin: 0.25rem 0; }
+    .doc-body blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 0.5rem 1rem;
+      margin: 1rem 0;
+      background: var(--surface2);
+      border-radius: 0 6px 6px 0;
+    }
+    .doc-body code {
+      font-family: var(--mono);
+      font-size: 0.875em;
+      background: var(--surface2);
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+      color: var(--pink);
+    }
+    .doc-body pre {
+      margin: 1rem 0;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #1e1e2a;
+      border: 1px solid var(--border);
+    }
+    .doc-body pre code {
+      display: block;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      background: none;
+      color: #abb2bf;
+      border-radius: 0;
+    }
+    .doc-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .doc-body th { background: var(--surface2); font-weight: 600; text-align: left; }
+    .doc-body td, .doc-body th { border: 1px solid var(--border); padding: 0.5em 0.75em; font-size: 0.9rem; }
+
+    /* Search results */
+    .search-results { max-width: 52rem; }
+    .search-result {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .search-result:hover { border-color: var(--accent); }
+    .search-result .path {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+    .search-result .match-line {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      padding: 0.15rem 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .search-result .match-line mark {
+      background: rgba(124, 106, 239, 0.3);
+      color: var(--text);
+      padding: 0.05em 0.15em;
+      border-radius: 2px;
+    }
+
+    /* Models view */
+    .model-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      max-width: 52rem;
+    }
+
+    .model-card h3 {
+      font-size: 1.1rem;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+    }
+
+    .model-card .prefix {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 0.75rem;
+    }
+
+    .model-card .description {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-bottom: 0.75rem;
+    }
+
+    .field-table {
+      width: 100%;
+      font-size: 0.8rem;
+    }
+
+    .field-table th {
+      text-align: left;
+      padding: 0.3rem 0.5rem;
+      color: var(--text-dim);
+      font-weight: 500;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field-table td {
+      padding: 0.3rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field-table .fname { font-family: var(--mono); color: var(--green); }
+    .field-table .ftype { font-family: var(--mono); color: var(--orange); }
+
+    /* Welcome */
+    .welcome {
+      max-width: 40rem;
+      margin: 3rem auto;
+      text-align: center;
+    }
+
+    .welcome h2 {
+      font-size: 1.5rem;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+
+    .welcome p {
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+    }
+
+    .welcome kbd {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    /* Loading */
+    .loading {
+      color: var(--text-dim);
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .error-msg {
+      color: var(--pink);
+      background: rgba(244, 114, 182, 0.1);
+      border: 1px solid rgba(244, 114, 182, 0.2);
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    /* JSON view */
+    .json-view {
+      max-width: 52rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-x: auto;
+      color: var(--text-dim);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h1>Contentbase</h1>
+        <div class="stats" id="stats">Loading...</div>
+      </div>
+      <div class="sidebar-nav" id="sidebar-nav"></div>
+    </nav>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="search-box">
+          <input type="text" id="search-input" placeholder="Search documents..." />
+        </div>
+        <div class="tab-bar">
+          <div class="tab active" data-tab="rendered">Rendered</div>
+          <div class="tab" data-tab="json">JSON</div>
+        </div>
+      </div>
+
+      <div class="content" id="content">
+        <div class="welcome" id="welcome-panel">
+          <h2>Contentbase Explorer</h2>
+          <p>Browse your collection using the sidebar, or search with <kbd>/</kbd></p>
+        </div>
+
+        <div class="panel" id="doc-panel">
+          <div class="doc-view" id="doc-rendered"></div>
+          <div class="json-view" id="doc-json" style="display:none"></div>
+        </div>
+
+        <div class="panel" id="search-panel">
+          <div class="search-results" id="search-results"></div>
+        </div>
+
+        <div class="panel" id="models-panel">
+          <div id="models-content"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+const API = window.location.origin;
+let state = {
+  models: {},
+  documents: [],
+  activeDoc: null,
+  activeTab: 'rendered',
+  expandedModels: new Set(),
+};
+
+// ── API helpers ──────────────────────────────────────────────────────────────
+
+async function api(path) {
+  const res = await fetch(`${API}${path}`);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+async function apiHtml(path) {
+  const res = await fetch(`${API}${path}`, { headers: { Accept: 'text/html' } });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.text();
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+
+async function init() {
+  try {
+    const [inspect, models, docs] = await Promise.all([
+      api('/api/inspect'),
+      api('/api/models'),
+      api('/api/documents'),
+    ]);
+
+    state.models = models;
+    state.documents = docs;
+
+    document.getElementById('stats').textContent =
+      `${inspect.documentCount} documents \u00b7 ${Object.keys(models).length} models`;
+
+    renderSidebar();
+    setupEvents();
+  } catch (e) {
+    document.getElementById('stats').textContent = 'Failed to connect';
+    document.getElementById('content').innerHTML =
+      `<div class="error-msg">Could not reach the API at ${API}<br><br>Make sure <code>cbase serve</code> is running.</div>`;
+  }
+}
+
+// ── Sidebar ──────────────────────────────────────────────────────────────────
+
+function renderSidebar() {
+  const nav = document.getElementById('sidebar-nav');
+  const modelNames = Object.keys(state.models);
+
+  // Group docs by model prefix
+  const groups = {};
+  const ungrouped = [];
+
+  for (const doc of state.documents) {
+    let matched = false;
+    for (const [name, def] of Object.entries(state.models)) {
+      if (doc.id.startsWith(def.prefix + '/')) {
+        if (!groups[name]) groups[name] = { def, docs: [] };
+        groups[name].docs.push(doc);
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) ungrouped.push(doc);
+  }
+
+  let html = '';
+
+  // Models link
+  html += `<div class="nav-section">Collection</div>`;
+  html += `<div class="nav-item" data-action="show-models">Models<span class="badge">${modelNames.length}</span></div>`;
+
+  // Model groups
+  html += `<div class="nav-section">Documents</div>`;
+  for (const [name, group] of Object.entries(groups)) {
+    const expanded = state.expandedModels.has(name);
+    html += `<div class="nav-item" data-model="${name}">${name}<span class="badge">${group.docs.length}</span></div>`;
+    if (expanded) {
+      html += `<ul class="doc-list">`;
+      for (const doc of group.docs) {
+        const label = doc.title || doc.id.split('/').pop();
+        const cls = state.activeDoc === doc.id ? 'active' : '';
+        html += `<li class="doc-item ${cls}" data-doc="${doc.id}" title="${doc.id}">${label}</li>`;
+      }
+      html += `</ul>`;
+    }
+  }
+
+  if (ungrouped.length) {
+    html += `<div class="nav-item" data-model="_other">Other<span class="badge">${ungrouped.length}</span></div>`;
+    if (state.expandedModels.has('_other')) {
+      html += `<ul class="doc-list">`;
+      for (const doc of ungrouped) {
+        const label = doc.title || doc.id;
+        const cls = state.activeDoc === doc.id ? 'active' : '';
+        html += `<li class="doc-item ${cls}" data-doc="${doc.id}" title="${doc.id}">${label}</li>`;
+      }
+      html += `</ul>`;
+    }
+  }
+
+  nav.innerHTML = html;
+}
+
+// ── Events ───────────────────────────────────────────────────────────────────
+
+function setupEvents() {
+  const nav = document.getElementById('sidebar-nav');
+  nav.addEventListener('click', (e) => {
+    const modelEl = e.target.closest('[data-model]');
+    const docEl = e.target.closest('[data-doc]');
+    const actionEl = e.target.closest('[data-action]');
+
+    if (actionEl) {
+      const action = actionEl.dataset.action;
+      if (action === 'show-models') showModels();
+      return;
+    }
+
+    if (docEl) {
+      loadDocument(docEl.dataset.doc);
+      return;
+    }
+
+    if (modelEl) {
+      const name = modelEl.dataset.model;
+      if (state.expandedModels.has(name)) {
+        state.expandedModels.delete(name);
+      } else {
+        state.expandedModels.add(name);
+      }
+      renderSidebar();
+    }
+  });
+
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      state.activeTab = tab.dataset.tab;
+      updateDocView();
+    });
+  });
+
+  // Search
+  const searchInput = document.getElementById('search-input');
+  let searchTimeout;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    const q = searchInput.value.trim();
+    if (q.length < 2) {
+      if (state.activeDoc) showPanel('doc-panel');
+      else showPanel(null);
+      return;
+    }
+    searchTimeout = setTimeout(() => doSearch(q), 250);
+  });
+
+  // Keyboard shortcut
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== searchInput) {
+      e.preventDefault();
+      searchInput.focus();
+    }
+    if (e.key === 'Escape') {
+      searchInput.value = '';
+      searchInput.blur();
+      if (state.activeDoc) showPanel('doc-panel');
+      else showPanel(null);
+    }
+  });
+}
+
+// ── Panels ───────────────────────────────────────────────────────────────────
+
+function showPanel(id) {
+  document.getElementById('welcome-panel').style.display = id ? 'none' : 'block';
+  ['doc-panel', 'search-panel', 'models-panel'].forEach(p => {
+    document.getElementById(p).classList.toggle('active', p === id);
+  });
+}
+
+// ── Document loading ─────────────────────────────────────────────────────────
+
+async function loadDocument(docId) {
+  state.activeDoc = docId;
+  renderSidebar();
+  showPanel('doc-panel');
+
+  const rendered = document.getElementById('doc-rendered');
+  const jsonView = document.getElementById('doc-json');
+  rendered.innerHTML = '<div class="loading">Loading...</div>';
+  jsonView.textContent = 'Loading...';
+
+  try {
+    const [htmlContent, jsonData] = await Promise.all([
+      apiHtml(`/docs/${docId}`),
+      api(`/docs/${docId}.json`),
+    ]);
+
+    // Extract body content from the full HTML page
+    const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    const bodyHtml = bodyMatch ? bodyMatch[1] : htmlContent;
+
+    // Build meta bar
+    let metaHtml = '<div class="doc-meta">';
+    if (jsonData.model) metaHtml += `<span class="meta-tag model"><span class="label">model:</span> <span class="value">${jsonData.model}</span></span>`;
+    if (jsonData.meta) {
+      for (const [k, v] of Object.entries(jsonData.meta)) {
+        if (k === 'title') continue;
+        const val = Array.isArray(v) ? v.join(', ') : v;
+        metaHtml += `<span class="meta-tag"><span class="label">${k}:</span> <span class="value">${val}</span></span>`;
+      }
+    }
+    if (jsonData.updatedAt) {
+      metaHtml += `<span class="meta-tag"><span class="label">updated:</span> <span class="value">${new Date(jsonData.updatedAt).toLocaleDateString()}</span></span>`;
+    }
+    metaHtml += '</div>';
+
+    rendered.innerHTML = metaHtml + `<div class="doc-body">${bodyHtml}</div>`;
+    rendered.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+
+    // Rewrite any doc links to load within the explorer
+    rendered.querySelectorAll('a[href^="/docs/"]').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const path = a.getAttribute('href').replace('/docs/', '').replace(/\.html$/, '');
+        loadDocument(path);
+      });
+    });
+
+    jsonView.textContent = JSON.stringify(jsonData, null, 2);
+
+    updateDocView();
+  } catch (e) {
+    rendered.innerHTML = `<div class="error-msg">Failed to load: ${e.message}</div>`;
+    jsonView.textContent = `Error: ${e.message}`;
+  }
+}
+
+function updateDocView() {
+  const rendered = document.getElementById('doc-rendered');
+  const jsonView = document.getElementById('doc-json');
+  if (state.activeTab === 'rendered') {
+    rendered.style.display = 'block';
+    jsonView.style.display = 'none';
+  } else {
+    rendered.style.display = 'none';
+    jsonView.style.display = 'block';
+  }
+}
+
+// ── Search ───────────────────────────────────────────────────────────────────
+
+async function doSearch(query) {
+  showPanel('search-panel');
+  const resultsEl = document.getElementById('search-results');
+  resultsEl.innerHTML = '<div class="loading">Searching...</div>';
+
+  try {
+    const escaped = encodeURIComponent(query);
+    const results = await api(`/api/search?pattern=${escaped}`);
+
+    if (results.length === 0) {
+      resultsEl.innerHTML = `<div class="loading">No results for "${query}"</div>`;
+      return;
+    }
+
+    const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+
+    resultsEl.innerHTML = results.map(r => {
+      const matchHtml = r.matches.slice(0, 3).map(m => {
+        const highlighted = m.replace(re, '<mark>$1</mark>');
+        return `<div class="match-line">${highlighted}</div>`;
+      }).join('');
+      return `<div class="search-result" data-doc="${r.pathId}">
+        <div class="path">${r.pathId}</div>
+        ${matchHtml}
+      </div>`;
+    }).join('');
+
+    resultsEl.querySelectorAll('.search-result').forEach(el => {
+      el.addEventListener('click', () => {
+        document.getElementById('search-input').value = '';
+        loadDocument(el.dataset.doc);
+      });
+    });
+  } catch (e) {
+    resultsEl.innerHTML = `<div class="error-msg">Search failed: ${e.message}</div>`;
+  }
+}
+
+// ── Models view ──────────────────────────────────────────────────────────────
+
+function showModels() {
+  showPanel('models-panel');
+  const container = document.getElementById('models-content');
+
+  container.innerHTML = Object.entries(state.models).map(([name, def]) => {
+    const fields = def.fields || [];
+    const fieldRows = fields.map(f => {
+      return `<tr><td class="fname">${f.name}</td><td class="ftype">${f.type || 'unknown'}</td><td>${f.description || ''}</td></tr>`;
+    }).join('');
+
+    const sections = Array.isArray(def.sections) ? def.sections : Object.keys(def.sections || {});
+    const relationships = Array.isArray(def.relationships) ? def.relationships : Object.keys(def.relationships || {});
+    const computed = def.computed || def.computedKeys || [];
+
+    const sectionNames = sections.map(s => typeof s === 'string' ? s : s.name || s.heading || JSON.stringify(s));
+    const relNames = relationships.map(r => typeof r === 'string' ? r : r.name || r.key || JSON.stringify(r));
+    const compNames = computed.map(c => typeof c === 'string' ? c : c.name || JSON.stringify(c));
+
+    let extras = '';
+    if (sectionNames.length) extras += `<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-dim)">Sections: <span style="color:var(--blue)">${sectionNames.join(', ')}</span></div>`;
+    if (relNames.length) extras += `<div style="font-size:0.8rem;color:var(--text-dim)">Relationships: <span style="color:var(--orange)">${relNames.join(', ')}</span></div>`;
+    if (compNames.length) extras += `<div style="font-size:0.8rem;color:var(--text-dim)">Computed: <span style="color:var(--pink)">${compNames.join(', ')}</span></div>`;
+
+    return `<div class="model-card">
+      <h3>${name}</h3>
+      <div class="prefix">${def.prefix}/</div>
+      ${def.description ? `<div class="description">${def.description}</div>` : ''}
+      ${fieldRows ? `<table class="field-table"><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody>${fieldRows}</tbody></table>` : ''}
+      ${extras}
+    </div>`;
+  }).join('');
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+
+init();
+</script>
+</body>
+</html>

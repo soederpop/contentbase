@@ -29,6 +29,263 @@ function textResult(text: string) {
 }
 
 // ---------------------------------------------------------------------------
+// read_me generator
+// ---------------------------------------------------------------------------
+
+function generateReadMe(collection: any, modelDefs: any[]) {
+  const lines: string[] = []
+
+  // Section 1: The Rules
+  const rootPath = collection.rootPath as string
+
+  lines.push(
+    '# Contentbase Collection Guide',
+    '',
+    `> **This collection is located at \`${rootPath}\`.**`,
+    '',
+    '## Rules — READ CAREFULLY',
+    '',
+    `**Every markdown file under \`${rootPath}\` is a structured document governed by a model schema.** These are NOT freeform files. They have required frontmatter fields, expected section headings, and validation rules. Treat them accordingly.`,
+    '',
+    '1. **DO NOT write or edit markdown files directly** — not with Write, Edit, cat, echo, sed, or any other means. Use `create_document` to scaffold new documents. Use `update_section` to edit section content. Use `update_document` to change frontmatter. These tools ensure the document structure stays valid.',
+    '2. **ALWAYS call `validate` after ANY mutation** — after creating, updating frontmatter, or editing sections. No exceptions. If validation fails, fix the document before moving on.',
+    '3. **Use MCP tools to read content** — not cat, Read, or raw file access. Use `query` to fetch documents by criteria, `search_content` for full-text search, and `list_documents` for discovery.',
+    '4. **A document\'s folder prefix = its model = its contract.** The prefix determines which schema governs the file — what frontmatter fields are required, what sections are expected, and what values are valid. Do not guess. Call `get_model_info` if you are unsure.',
+    '',
+  )
+
+  // Section 2: Models in This Collection
+  lines.push('## Models in This Collection', '')
+
+  for (const def of modelDefs) {
+    const name = def.name as string
+    const prefix = def.prefix as string
+    const description = def.description || ''
+    const prefixDocs = collection.available.filter((id: string) => id.startsWith(prefix + '/'))
+    const docCount = prefixDocs.length
+
+    lines.push(`### ${name}`, '')
+    lines.push(`- **Prefix:** \`${prefix}/\``)
+    lines.push(`- **Documents:** ${docCount}`)
+    if (description) lines.push(`- **Description:** ${description}`)
+    lines.push('')
+
+    // Fields
+    const fields = introspectMetaSchema(def.meta)
+    if (fields.length > 0) {
+      lines.push('**Frontmatter Fields:**', '')
+      lines.push('| Field | Type | Required | Default | Description |')
+      lines.push('|-------|------|----------|---------|-------------|')
+      for (const f of fields as any[]) {
+        const req = f.required ? 'yes' : 'no'
+        const def_val = f.defaultValue !== undefined ? `\`${JSON.stringify(f.defaultValue)}\`` : ''
+        const desc = f.description || ''
+        lines.push(`| ${f.name} | ${f.type} | ${req} | ${def_val} | ${desc} |`)
+      }
+      lines.push('')
+    }
+
+    // Sections
+    const sections = Object.entries(def.sections || {})
+    if (sections.length > 0) {
+      lines.push('**Sections:**', '')
+      for (const [key, sec] of sections as [string, any][]) {
+        lines.push(`- **${sec.heading}** (key: \`${key}\`)${sec.schema ? ' — validated' : ''}`)
+      }
+      lines.push('')
+    }
+
+    // Relationships
+    const relationships = Object.entries(def.relationships || {})
+    if (relationships.length > 0) {
+      lines.push('**Relationships:**', '')
+      for (const [key, rel] of relationships as [string, any][]) {
+        lines.push(`- \`${key}\` → ${rel.type} **${rel.model}**`)
+      }
+      lines.push('')
+    }
+
+    // Computed & Scopes
+    const computedKeys = Object.keys(def.computed || {})
+    const scopeKeys = Object.keys(def.scopes || {})
+    if (computedKeys.length > 0) lines.push(`**Computed:** ${computedKeys.join(', ')}`, '')
+    if (scopeKeys.length > 0) lines.push(`**Scopes:** ${scopeKeys.join(', ')}`, '')
+  }
+
+  // Section 3: Capability Map
+  lines.push(
+    '## Capability Map',
+    '',
+    '| Intent | Tool |',
+    '|--------|------|',
+    '| Orientation & guidance | `read_me` |',
+    '| See what models exist | `inspect` |',
+    '| Deep-dive one model | `get_model_info` |',
+    '| List documents | `list_documents` |',
+    '| Find by criteria | `query` |',
+    '| Full-text search | `search_content` |',
+    '| File-level grep | `text_search` |',
+    '| Create new document | `create_document` |',
+    '| Edit a section | `update_section` |',
+    '| Update frontmatter | `update_document` |',
+    '| Validate a document | `validate` |',
+    '| Delete a document | `delete_document` |',
+    '| Run a collection action | `run_action` |',
+    '',
+  )
+
+  // Section 4: Workflow
+  lines.push(
+    '## Recommended Workflow',
+    '',
+    '1. **Orientation** — Call `read_me` (this tool) at the start of every session.',
+    '2. **Discovery** — Use `list_documents` or `query` to find what exists.',
+    '3. **Reading** — Use `query` with `select` to fetch specific fields, or read a document resource.',
+    '4. **Creating** — Use `create_document` with the correct prefix. It scaffolds frontmatter and sections.',
+    '5. **Editing** — Use `update_section` for targeted section edits, `update_document` for frontmatter.',
+    '6. **Validation** — Always call `validate` after creating or editing.',
+    '',
+  )
+
+  // Section 5: Query Quick Reference
+  lines.push(
+    '## Query Quick Reference',
+    '',
+    'The `query` tool uses MongoDB-style DSL:',
+    '',
+    '- Literal value → `$eq`: `"meta.status": "active"`',
+    '- Array → `$in`: `"meta.tags": ["a", "b"]`',
+    '- Operator object: `"meta.priority": { "$gt": 5 }`',
+    '- Operators: `$eq`, `$neq`, `$in`, `$notIn`, `$gt`, `$lt`, `$gte`, `$lte`, `$contains`, `$startsWith`, `$endsWith`, `$regex`, `$exists`',
+    '- Supports `sort`, `limit`, `offset`, `select`, `scopes`, `method` (fetchAll/first/last/count)',
+    '',
+  )
+
+  // Section 6: Document Anatomy
+  lines.push(
+    '## Document Anatomy',
+    '',
+    '```markdown',
+    '---',
+    'field: value      # YAML frontmatter (model schema)',
+    '---',
+    '# Document Title  # H1 = title',
+    '',
+    '## Section Name   # H2 = sections (defined by model)',
+    '',
+    'Content here...',
+    '```',
+  )
+
+  return lines.join('\n')
+}
+
+// ---------------------------------------------------------------------------
+// Model info generator
+// ---------------------------------------------------------------------------
+
+function generateModelInfo(collection: any, def: any) {
+  const lines: string[] = []
+  const name = def.name as string
+  const prefix = def.prefix as string
+  const description = def.description || ''
+  const prefixDocs = collection.available.filter((id: string) => id.startsWith(prefix + '/'))
+
+  lines.push(`# Model: ${name}`, '')
+  lines.push(`- **Prefix:** \`${prefix}/\``)
+  lines.push(`- **Documents:** ${prefixDocs.length}`)
+  if (description) lines.push(`- **Description:** ${description}`)
+  lines.push('')
+
+  // Fields
+  const fields = introspectMetaSchema(def.meta)
+  if (fields.length > 0) {
+    lines.push('## Frontmatter Fields', '')
+    lines.push('| Field | Type | Required | Default | Description |')
+    lines.push('|-------|------|----------|---------|-------------|')
+    for (const f of fields as any[]) {
+      const req = f.required ? 'yes' : 'no'
+      const def_val = f.defaultValue !== undefined ? `\`${JSON.stringify(f.defaultValue)}\`` : ''
+      const desc = f.description || ''
+      lines.push(`| ${f.name} | ${f.type} | ${req} | ${def_val} | ${desc} |`)
+    }
+    lines.push('')
+  }
+
+  // Sections
+  const sections = Object.entries(def.sections || {})
+  if (sections.length > 0) {
+    lines.push('## Sections', '')
+    for (const [key, sec] of sections as [string, any][]) {
+      lines.push(`- **${sec.heading}** (key: \`${key}\`)${sec.schema ? ' — has schema validation' : ''}`)
+      if (sec.alternatives?.length) {
+        lines.push(`  Alternatives: ${sec.alternatives.join(', ')}`)
+      }
+    }
+    lines.push('')
+  }
+
+  // Relationships
+  const relationships = Object.entries(def.relationships || {})
+  if (relationships.length > 0) {
+    lines.push('## Relationships', '')
+    for (const [key, rel] of relationships as [string, any][]) {
+      lines.push(`- \`${key}\` → ${rel.type} **${rel.model}**`)
+    }
+    lines.push('')
+  }
+
+  // Computed & Scopes
+  const computedKeys = Object.keys(def.computed || {})
+  if (computedKeys.length > 0) {
+    lines.push('## Computed Properties', '')
+    lines.push(computedKeys.map(k => `- \`${k}\``).join('\n'))
+    lines.push('')
+  }
+
+  const scopeKeys = Object.keys(def.scopes || {})
+  if (scopeKeys.length > 0) {
+    lines.push('## Named Scopes', '')
+    lines.push(scopeKeys.map(k => `- \`${k}\``).join('\n'))
+    lines.push('')
+  }
+
+  // Existing documents
+  if (prefixDocs.length > 0) {
+    lines.push('## Existing Documents', '')
+    for (const id of prefixDocs) {
+      lines.push(`- \`${id}\``)
+    }
+    lines.push('')
+  }
+
+  // Example scaffold
+  const defaultMeta: Record<string, any> = {}
+  for (const f of fields as any[]) {
+    if (f.defaultValue !== undefined) {
+      defaultMeta[f.name] = f.defaultValue
+    } else if (f.required) {
+      defaultMeta[f.name] = `<${f.type}>`
+    }
+  }
+  const sectionHeadings = sections.map(([, sec]: [string, any]) => `## ${sec.heading}\n\n`)
+
+  lines.push('## Example Document', '')
+  lines.push('```markdown')
+  lines.push('---')
+  for (const [k, v] of Object.entries(defaultMeta)) {
+    lines.push(`${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
+  }
+  lines.push('---')
+  lines.push(`# Your Title Here`)
+  lines.push('')
+  lines.push(sectionHeadings.join(''))
+  lines.push('```')
+
+  return lines.join('\n')
+}
+
+// ---------------------------------------------------------------------------
 // Command handler
 // ---------------------------------------------------------------------------
 
@@ -146,8 +403,21 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   // TOOLS
   // =========================================================================
 
+  // -- read_me: entry-point guidance for AI agents --
+  const readMeContent = generateReadMe(collection, modelDefs)
+
+  mcpServer.tool('read_me', {
+    description: [
+      'Returns the content collection guide. Call this BEFORE working with any documents.',
+      'Contains model definitions, available tools, query syntax, and recommended workflow.',
+      'Call this at the start of every session to understand the collection structure.',
+    ].join('\n'),
+    schema: z.object({}),
+    handler: () => textResult(readMeContent),
+  })
+
   mcpServer.tool('inspect', {
-    description: 'Overview of the collection — registered models, document count, available actions',
+    description: 'Overview of the collection — registered models, document count, available actions. Call `read_me` first if this is your first interaction.',
     schema: z.object({}),
     handler: () => {
       const schema = buildSchemaJSON(collection)
@@ -161,8 +431,22 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     },
   })
 
+  mcpServer.tool('get_model_info', {
+    description: 'Get detailed information about a single model — fields, sections, relationships, example document. Use when you need to understand a model before creating or editing its documents.',
+    schema: z.object({
+      model: z.string().describe('Model name or prefix'),
+    }),
+    handler: (args) => {
+      const def = resolveModelDef(collection, args.model)
+      if (!def) {
+        return errorResult(`Unknown model: ${args.model}. Available: ${modelDefs.map((d: any) => d.name).join(', ')}`)
+      }
+      return textResult(generateModelInfo(collection, def))
+    },
+  })
+
   mcpServer.tool('list_documents', {
-    description: 'List all document path IDs in the collection, optionally filtered by model name or prefix',
+    description: 'List all document path IDs in the collection, optionally filtered by model name or prefix. The prefix before the slash indicates the model.',
     schema: z.object({
       model: z.string().optional().describe('Filter by model name or prefix'),
     }),
@@ -185,7 +469,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
   mcpServer.tool('query', {
     description: [
-      'Query typed model instances with MongoDB-style filtering.',
+      'Query typed model instances with MongoDB-style filtering. See `read_me` output for full syntax reference.',
       'Where clause: keys are dot-notation paths, values are literals (implies $eq),',
       'arrays (implies $in), or operator objects like { "$gt": 5 }.',
       'Operators: $eq, $neq, $in, $notIn, $gt, $lt, $gte, $lte,',
@@ -249,7 +533,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   })
 
   mcpServer.tool('search_content', {
-    description: 'Full-text regex search across all document content. Returns matching document IDs with context.',
+    description: 'Full-text regex search across all document content. Returns matching document IDs with context. Searches document body text, not metadata — for metadata filtering, use `query` instead.',
     schema: z.object({
       pattern: z.string().describe('Regex pattern to search for'),
       model: z.string().optional().describe('Limit search to a specific model'),
@@ -336,7 +620,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   })
 
   mcpServer.tool('validate', {
-    description: 'Validate a document against its model schema. Returns validation result with any errors.',
+    description: 'Validate a document against its model schema. Returns validation result with any errors. **ALWAYS call after create/update operations** to confirm the document conforms to its model.',
     schema: z.object({
       pathId: z.string().describe('Document path ID'),
       model: z.string().optional().describe('Model name (auto-detected if omitted)'),
@@ -359,7 +643,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   })
 
   mcpServer.tool('create_document', {
-    description: 'Create a new document with proper scaffolding from a model definition. Generates frontmatter defaults and section headings.',
+    description: '**ALWAYS use this instead of writing markdown files directly.** Creates a new document with proper scaffolding from a model definition — generates correct frontmatter defaults and section headings. Call `validate` after creation.',
     schema: z.object({
       pathId: z.string().describe('Path ID for the new document (e.g. "epics/my-new-epic")'),
       title: z.string().describe('Document title (used as the H1 heading)'),
@@ -400,7 +684,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   })
 
   mcpServer.tool('update_document', {
-    description: 'Update a document\'s frontmatter and/or replace its entire content body.',
+    description: 'Update a document\'s frontmatter and/or replace its entire content body. Use for frontmatter changes. For section-level edits, prefer `update_section` instead. Call `validate` after.',
     schema: z.object({
       pathId: z.string().describe('Document path ID'),
       meta: z.record(z.string(), z.any()).optional().describe('Frontmatter fields to merge (existing fields are preserved unless overridden)'),
@@ -425,7 +709,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   })
 
   mcpServer.tool('update_section', {
-    description: 'Surgically edit a specific section of a document — replace, append, or remove.',
+    description: 'Preferred way to edit document content. Surgically edit a specific section — replace, append, or remove. Target a section by its heading name. Call `validate` after.',
     schema: z.object({
       pathId: z.string().describe('Document path ID'),
       heading: z.string().describe('Section heading text to target (e.g. "Overview", "Requirements")'),
@@ -465,7 +749,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   })
 
   mcpServer.tool('delete_document', {
-    description: 'Delete a document from the collection permanently.',
+    description: 'Delete a document from the collection permanently. Cannot be undone except through version control.',
     schema: z.object({
       pathId: z.string().describe('Document path ID to delete'),
     }),
@@ -604,7 +888,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   })
 
   mcpServer.prompt('teach', {
-    description: 'Full contentbase documentation — models, table of contents, CLI reference, and API primer',
+    description: 'Full contentbase documentation — models, table of contents, CLI reference, and API primer. For a quick-start behavioral guide, use the `read_me` tool instead.',
     handler: async () => {
       const modelsSummary = await collection.generateModelSummary()
       const toc = collection.tableOfContents({ title: 'Table of Contents' })
@@ -620,6 +904,8 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       } catch {}
 
       const content = [
+        '> **Quick start:** Call the `read_me` tool for a concise behavioral guide. This prompt provides the full reference.',
+        '',
         modelsSummary.trimEnd(),
         '', '---', '',
         toc.trimEnd(),
