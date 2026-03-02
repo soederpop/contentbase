@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import matter from "gray-matter";
+import picomatch from "picomatch";
 import { Document } from "./document";
 import { CollectionQuery } from "./query/collection-query";
 import { createModelInstance } from "./model-instance";
@@ -186,7 +187,28 @@ export class Collection {
   }
 
   get available(): string[] {
-    return Array.from(this.#items.keys());
+    return Array.from(this.#items.keys()).filter(
+      (id) => !this.#isExcludedByModel(id)
+    );
+  }
+
+  /**
+   * Check if a pathId is excluded by any model's exclude patterns.
+   * Patterns are matched against the full pathId using picomatch (globs) or RegExp.
+   */
+  #isExcludedByModel(pathId: string): boolean {
+    for (const def of this.modelDefinitions) {
+      if (!def.exclude || def.exclude.length === 0) continue;
+      if (!pathId.startsWith(def.prefix)) continue;
+      for (const pattern of def.exclude) {
+        if (pattern instanceof RegExp) {
+          if (pattern.test(pathId)) return true;
+        } else {
+          if (picomatch.isMatch(pathId, pattern)) return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**
@@ -223,6 +245,11 @@ export class Collection {
     await Promise.all(
       paths.map(async (filePath) => {
         const pathId = this.getPathId(filePath);
+
+        // Globally exclude templates directory — templates are only used
+        // for scaffolding and should never appear in queries or listings
+        if (pathId.startsWith("templates/") || pathId === "templates") return;
+
         const raw = await fs.readFile(filePath, "utf8");
         const stat = await fs.stat(filePath);
         const { data, content } = matter(raw);
@@ -833,7 +860,7 @@ export class Collection {
 
     const result: Record<string, unknown> = {
       models,
-      itemIds: Array.from(this.#items.keys()),
+      itemIds: this.available,
     };
 
     if (options.content) {

@@ -112,6 +112,8 @@ export interface ModelDefinition<
   match?: (doc: DocumentRef) => boolean;
   defaults?: Partial<z.input<TMeta>>;
   pattern?: string | string[];
+  /** Glob patterns or RegExp to exclude matching pathIds from queries, listings, and TOC */
+  exclude?: (string | RegExp)[];
 
   /** The inferred Zod schema for convenience (same as meta) */
   schema: TMeta;

@@ -28,6 +28,8 @@ export interface DefineModelConfig<
   match?: (doc: DocumentRef) => boolean;
   defaults?: Partial<z.input<TMeta>>;
   pattern?: string | string[];
+  /** Glob patterns or RegExp to exclude matching pathIds from queries, listings, and TOC */
+  exclude?: (string | RegExp)[];
 }
 
 /**
@@ -86,6 +88,7 @@ export function defineModel<
     match: config.match,
     defaults: config.defaults,
     pattern: config.pattern,
+    exclude: config.exclude,
   };
 
   // description is lazy — computed on first access if not provided by the user.

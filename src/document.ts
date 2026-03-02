@@ -124,6 +124,11 @@ export class Document {
       heading = this.astQuery.findHeadingByText(startHeading) as
         | Content
         | undefined;
+
+      // If not found, try alternatives from the model definition's sections
+      if (!heading) {
+        heading = this.#resolveAlternativeHeading(startHeading);
+      }
     } else {
       heading = startHeading;
     }
@@ -138,6 +143,28 @@ export class Document {
       ? this.astQuery.findBetween(heading, endHeading)
       : this.astQuery.findAllAfter(heading);
     return [heading, ...sectionNodes];
+  }
+
+  /**
+   * Look up section alternatives from the model definition.
+   * If the requested heading matches a section's heading or is one of its alternatives,
+   * try all variants (primary + alternatives) until one is found in the AST.
+   */
+  #resolveAlternativeHeading(requestedHeading: string): Content | undefined {
+    const def = this.collection?.findModelDefinition?.(this.id);
+    if (!def?.sections) return undefined;
+
+    for (const sectionDef of Object.values(def.sections) as any[]) {
+      const allNames = [sectionDef.heading, ...(sectionDef.alternatives ?? [])];
+      if (!allNames.some((n: string) => n === requestedHeading)) continue;
+
+      for (const name of allNames) {
+        const found = this.astQuery.findHeadingByText(name) as Content | undefined;
+        if (found) return found;
+      }
+    }
+
+    return undefined;
   }
 
   /**
