@@ -380,8 +380,12 @@ export class Collection {
       }
     }
 
-    // 3. Fall back to Base model
-    return baseModel;
+    // 3. Fall back to Base model only for root-level documents (no subfolder)
+    if (baseModel && !pathId.includes("/")) {
+      return baseModel;
+    }
+
+    return undefined;
   }
 
   // ─── Querying ───
@@ -691,160 +695,94 @@ export class Collection {
 
   // ─── Model Summary ───
 
-  async generateModelSummary(): Promise<string> {
-    const lines: string[] = ["# Models", ""];
+  /**
+   * Generate a plain-text summary of the collection and its models.
+   * Returns the same output as `cbase inspect`.
+   */
+  generateModelSummary(): string {
+    if (!this.#loaded) {
+      throw new Error("Collection has not been loaded. Call load() first.");
+    }
 
-    // Preamble
-    lines.push(
-      "Models define the structure of markdown documents in this collection. " +
-      "Each document is a markdown file with YAML frontmatter (metadata attributes) " +
-      "and a heading-based structure (sections). Models specify the expected frontmatter " +
-      "fields via a schema, named sections that map to `##` headings in the document body, " +
-      "relationships to other models, and computed properties derived at query time.",
-      ""
-    );
+    const lines: string[] = [];
 
-    // Collection-level actions
-    if (this.#actions.size > 0) {
-      lines.push("## Actions", "");
-      for (const name of this.#actions.keys()) {
-        lines.push(`- \`${name}\``);
+    lines.push(`Collection: ${this.name}`);
+    lines.push(`Root: ${this.rootPath}`);
+    lines.push(`Items: ${this.available.length}`);
+    lines.push("");
+
+    for (const def of this.modelDefinitions) {
+      const matchingItems = this.available.filter(
+        (id) => this.findModelDefinition(id)?.name === def.name
+      );
+      lines.push(`  Model: ${def.name}`);
+      lines.push(`    Prefix: ${def.prefix}`);
+      const fields = introspectMetaSchema(def.meta);
+      lines.push(
+        `    Meta: ${fields.length > 0 ? fields.map((f) => `${f.name}(${f.type})`).join(", ") : "(none)"}`
+      );
+      lines.push(
+        `    Sections: ${Object.keys(def.sections).join(", ") || "(none)"}`
+      );
+      lines.push(
+        `    Relationships: ${Object.keys(def.relationships).join(", ") || "(none)"}`
+      );
+      lines.push(`    Documents: ${matchingItems.length}`);
+      if (matchingItems.length > 0) {
+        lines.push(`    IDs: ${matchingItems.join(", ")}`);
       }
       lines.push("");
     }
 
-    const defs = this.modelDefinitions;
-
-    for (let i = 0; i < defs.length; i++) {
-      const def = defs[i];
-      if (i > 0) lines.push("---", "");
-      lines.push(`## ${pluralize(def.name)}`, "");
-      if (def.description) {
-        lines.push(def.description, "");
-      }
-      lines.push(`**Prefix:** \`${def.prefix}\``, "");
-
-      // Meta attributes
-      const fields = introspectMetaSchema(def.meta);
-      if (fields.length > 0) {
-        lines.push("### Attributes", "");
-        lines.push("| Field | Type | Required | Default | Description |");
-        lines.push("|-------|------|----------|---------|-------------|");
-        for (const f of fields) {
-          const req = f.required ? "yes" : "optional";
-          const def_ = f.defaultValue !== undefined
-            ? `\`${JSON.stringify(f.defaultValue)}\``
-            : "—";
-          const desc = f.description ?? "—";
-          lines.push(`| ${f.name} | ${f.type} | ${req} | ${def_} | ${desc} |`);
-        }
-        lines.push("");
-      }
-
-      // Sections
-      const sectionEntries = Object.entries(def.sections ?? {});
-      if (sectionEntries.length > 0) {
-        lines.push("### Sections", "");
-        lines.push("| Name | Heading | Alternatives | Description |");
-        lines.push("|------|---------|--------------|-------------|");
-        for (const [key, sec] of sectionEntries) {
-          const s = sec as any;
-          const alts = s.alternatives?.length
-            ? s.alternatives.join(", ")
-            : "—";
-          const desc = s.schema?.description ?? "—";
-          lines.push(`| ${key} | ${s.heading} | ${alts} | ${desc} |`);
-        }
-        lines.push("");
-      }
-
-      // Relationships
-      const relEntries = Object.entries(def.relationships ?? {}) as [string, RelationshipDefinition][];
-      if (relEntries.length > 0) {
-        lines.push("### Relationships", "");
-        lines.push("| Name | Type | Target |");
-        lines.push("|------|------|--------|");
-        for (const [key, rel] of relEntries) {
-          const targetName = rel.target().name;
-          if (rel.type === "hasMany") {
-            lines.push(`| ${key} | hasMany | ${targetName} |`);
-          } else {
-            lines.push(`| ${key} | belongsTo | ${targetName} |`);
-          }
-        }
-        lines.push("");
-      }
-
-      // Computed properties
-      const computedKeys = Object.keys(def.computed ?? {});
-      if (computedKeys.length > 0) {
-        lines.push("### Computed Properties", "");
-        for (const key of computedKeys) {
-          lines.push(`- \`${key}\``);
-        }
-        lines.push("");
-      }
-
-      // Example: template content or auto-generated scaffold
-      const exampleContent = await this.#modelExample(def, fields);
-      lines.push("### Example", "");
-      lines.push("```markdown", exampleContent, "```", "");
+    if (this.availableActions.length > 0) {
+      lines.push(`Actions: ${this.availableActions.join(", ")}`);
     }
 
-    const markdown = lines.join("\n").trimEnd() + "\n";
-
-    await fs.writeFile(path.join(this.rootPath, "MODELS.md"), markdown, "utf8");
-
-    return markdown;
+    return lines.join("\n").trimEnd();
   }
 
-  async #modelExample(
-    def: ModelDefinition<any, any, any, any, any>,
-    fields: FieldInfo[]
-  ): Promise<string> {
-    // Try to load a template file
-    const templateExtensions = ["md", "mdx"];
-    for (const ext of templateExtensions) {
-      const templatePath = path.join(
-        this.rootPath,
-        "templates",
-        `${def.name.toLowerCase()}.${ext}`
-      );
-      try {
-        return (await fs.readFile(templatePath, "utf8")).trimEnd();
-      } catch {
-        // not found, try next
+  /**
+   * Write MODELS.md to the collection root.
+   * Preserves the `## Overview` section if it already exists.
+   * The generated summary is placed in the `## Summary` section.
+   */
+  async saveModelSummary(): Promise<string> {
+    const summary = this.generateModelSummary();
+    const modelsPath = path.join(this.rootPath, "MODELS.md");
+
+    // Preserve existing Overview section content
+    let overview = "";
+    try {
+      const existing = await fs.readFile(modelsPath, "utf8");
+      const overviewStart = existing.indexOf("## Overview");
+      if (overviewStart !== -1) {
+        const contentStart = existing.indexOf("\n", overviewStart) + 1;
+        const nextHeading = existing.indexOf("\n## ", contentStart);
+        const contentEnd = nextHeading !== -1 ? nextHeading : existing.length;
+        overview = existing.slice(contentStart, contentEnd).trim();
       }
+    } catch {
+      // No existing file
     }
 
-    // No template — generate scaffold matching the create command logic
-    const matter = await import("gray-matter");
-    const meta: Record<string, unknown> = {};
+    const lines: string[] = [
+      "# Models",
+      "",
+      "## Overview",
+      "",
+      overview || "",
+      "",
+      "## Summary",
+      "",
+      "```",
+      summary,
+      "```",
+      "",
+    ];
 
-    for (const f of fields) {
-      if (f.defaultValue !== undefined) {
-        meta[f.name] = f.defaultValue;
-      }
-    }
-    const definitionDefaults: Record<string, unknown> = (def as any).defaults ?? {};
-    Object.assign(meta, definitionDefaults);
-
-    const bodyLines: string[] = [];
-    bodyLines.push(`# ${def.name} Title`);
-    bodyLines.push("");
-
-    const sections = def.sections ?? {};
-    for (const [, sec] of Object.entries(sections)) {
-      const s = sec as any;
-      bodyLines.push(`## ${s.heading}`);
-      bodyLines.push("");
-      if (s.schema?.description) {
-        bodyLines.push(s.schema.description);
-        bodyLines.push("");
-      }
-    }
-
-    return matter.default.stringify(bodyLines.join("\n"), meta).trimEnd();
+    const markdown = lines.join("\n");
+    await fs.writeFile(modelsPath, markdown, "utf8");
+    return summary;
   }
 
   // ─── Serialization ───
@@ -853,8 +791,8 @@ export class Collection {
     const models = this.modelDefinitions.map((def) => ({
       name: def.name,
       prefix: def.prefix,
-      matchingPaths: this.available.filter((id) =>
-        id.startsWith(def.prefix)
+      matchingPaths: this.available.filter(
+        (id) => this.findModelDefinition(id)?.name === def.name
       ),
     }));
 

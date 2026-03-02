@@ -13,7 +13,7 @@ async function handler(options: z.infer<typeof argsSchema>) {
     contentFolder: options.contentFolder,
   })
 
-  await collection.generateModelSummary()
+  await collection.saveModelSummary()
   console.log(`MODELS.md written to ${collection.rootPath}/MODELS.md`)
 
   const toc = collection.tableOfContents({ title: 'Table of Contents' })

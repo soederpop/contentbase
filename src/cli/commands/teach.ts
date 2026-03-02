@@ -13,7 +13,7 @@ async function handler(options: z.infer<typeof argsSchema>) {
     contentFolder: options.contentFolder,
   })
 
-  const modelsSummary = await collection.generateModelSummary()
+  const modelsSummary = collection.generateModelSummary()
   const toc = collection.tableOfContents({ title: 'Table of Contents' })
 
   // Read the bundled static docs from the contentbase package

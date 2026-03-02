@@ -116,46 +116,56 @@ describe("Collection", () => {
       await fs.rm(tmpDir, { recursive: true });
     });
 
-    it("generates markdown with model attributes, sections, relationships, and computed", async () => {
-      const md = await tmpCollection.generateModelSummary();
+    it("generates inspect-style text with model info", () => {
+      const text = tmpCollection.generateModelSummary();
 
-      // Model headings (pluralized)
-      expect(md).toContain("## Epics");
-      expect(md).toContain("## Stories");
+      // Collection header
+      expect(text).toContain("Collection:");
+      expect(text).toContain("Root:");
+      expect(text).toContain("Items:");
+
+      // Model entries
+      expect(text).toContain("Model: Epic");
+      expect(text).toContain("Model: Story");
 
       // Prefixes
-      expect(md).toContain("`epics`");
-      expect(md).toContain("`stories`");
+      expect(text).toContain("Prefix: epics");
+      expect(text).toContain("Prefix: stories");
 
       // Meta attributes
-      expect(md).toContain("priority");
-      expect(md).toContain("enum(`low`, `medium`, `high`)");
-      expect(md).toContain("enum(`created`, `in-progress`, `complete`)");
-      expect(md).toContain("`\"created\"`");
+      expect(text).toContain("priority");
+      expect(text).toContain("status");
 
       // Sections
-      expect(md).toContain("Acceptance Criteria");
-      expect(md).toContain("Mockups");
+      expect(text).toContain("Sections:");
 
       // Relationships
-      expect(md).toContain("hasMany");
-      expect(md).toContain("belongsTo");
-
-      // Computed
-      expect(md).toContain("`isComplete`");
+      expect(text).toContain("Relationships:");
     });
 
-    it("writes MODELS.md to rootPath", async () => {
-      await tmpCollection.generateModelSummary();
+    it("saveModelSummary writes MODELS.md to rootPath", async () => {
+      await tmpCollection.saveModelSummary();
       const content = await fs.readFile(path.join(tmpDir, "MODELS.md"), "utf8");
       expect(content).toContain("# Models");
+      expect(content).toContain("## Overview");
+      expect(content).toContain("## Summary");
     });
 
-    it("includes collection actions", async () => {
+    it("saveModelSummary preserves existing Overview content", async () => {
+      // Write an initial MODELS.md with user content in Overview
+      const initial = "# Models\n\n## Overview\n\nThis is my custom overview.\n\n## Summary\n\n```\nold summary\n```\n";
+      await fs.writeFile(path.join(tmpDir, "MODELS.md"), initial, "utf8");
+
+      await tmpCollection.saveModelSummary();
+      const content = await fs.readFile(path.join(tmpDir, "MODELS.md"), "utf8");
+      expect(content).toContain("This is my custom overview.");
+      expect(content).toContain("Model: Epic");
+    });
+
+    it("includes collection actions", () => {
       tmpCollection.action("deploy", () => {});
-      const md = await tmpCollection.generateModelSummary();
-      expect(md).toContain("## Actions");
-      expect(md).toContain("`deploy`");
+      const text = tmpCollection.generateModelSummary();
+      expect(text).toContain("Actions: deploy");
     });
   });
 });

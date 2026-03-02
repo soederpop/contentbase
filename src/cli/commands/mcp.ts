@@ -333,7 +333,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     name: 'Models Summary',
     description: 'Generated MODELS.md describing all model definitions with attributes, sections, and relationships',
     mimeType: 'text/markdown',
-    handler: async () => await collection.generateModelSummary(),
+    handler: () => collection.generateModelSummary(),
   })
 
   mcpServer.resource('contentbase://primer', {
@@ -341,7 +341,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     description: 'Combined teach output — models summary, table of contents, CLI reference, and API primer',
     mimeType: 'text/markdown',
     handler: async () => {
-      const modelsSummary = await collection.generateModelSummary()
+      const modelsSummary = collection.generateModelSummary()
       const toc = collection.tableOfContents({ title: 'Table of Contents' })
 
       const packageRoot = path.resolve(import.meta.dir, '../../..')
@@ -890,7 +890,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   mcpServer.prompt('teach', {
     description: 'Full contentbase documentation — models, table of contents, CLI reference, and API primer. For a quick-start behavioral guide, use the `read_me` tool instead.',
     handler: async () => {
-      const modelsSummary = await collection.generateModelSummary()
+      const modelsSummary = collection.generateModelSummary()
       const toc = collection.tableOfContents({ title: 'Table of Contents' })
 
       const packageRoot = path.resolve(import.meta.dir, '../../..')
