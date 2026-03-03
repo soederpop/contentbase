@@ -30,6 +30,8 @@ export interface DefineModelConfig<
   pattern?: string | string[];
   /** Glob patterns or RegExp to exclude matching pathIds from queries, listings, and TOC */
   exclude?: (string | RegExp)[];
+  /** When true, documents are not required to have an H1 title */
+  titleOptional?: boolean;
 }
 
 /**
@@ -89,6 +91,7 @@ export function defineModel<
     defaults: config.defaults,
     pattern: config.pattern,
     exclude: config.exclude,
+    titleOptional: config.titleOptional,
   };
 
   // description is lazy — computed on first access if not provided by the user.

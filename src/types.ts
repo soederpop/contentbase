@@ -114,6 +114,8 @@ export interface ModelDefinition<
   pattern?: string | string[];
   /** Glob patterns or RegExp to exclude matching pathIds from queries, listings, and TOC */
   exclude?: (string | RegExp)[];
+  /** When true, documents are not required to have an H1 title */
+  titleOptional?: boolean;
 
   /** The inferred Zod schema for convenience (same as meta) */
   schema: TMeta;

@@ -14,6 +14,7 @@ const argsSchema = z.object({
   port: z.number().default(3003),
   contentFolder: z.string().optional(),
   modulePath: z.string().optional(),
+  mcpCompat: z.enum(['standard', 'codex']).optional(),
 })
 
 // ---------------------------------------------------------------------------
@@ -51,6 +52,7 @@ function generateReadMe(collection: any, modelDefs: any[]) {
     '2. **ALWAYS call `validate` after ANY mutation** — after creating, updating frontmatter, or editing sections. No exceptions. If validation fails, fix the document before moving on.',
     '3. **Use MCP tools to read content** — not cat, Read, or raw file access. Use `query` to fetch documents by criteria, `search_content` for full-text search, and `list_documents` for discovery.',
     '4. **A document\'s folder prefix = its model = its contract.** The prefix determines which schema governs the file — what frontmatter fields are required, what sections are expected, and what values are valid. Do not guess. Call `get_model_info` if you are unsure.',
+    '5. **Every document MUST have a title** — either an H1 heading (`# Title`) or a `title` field in frontmatter. Validation will fail without one, unless the model sets `titleOptional: true`.',
     '',
   )
 
@@ -291,6 +293,8 @@ function generateModelInfo(collection: any, def: any) {
 
 async function handler(options: z.infer<typeof argsSchema>, context: { container: any }) {
   const container = context.container
+  const envCompat = process.env.MCP_HTTP_COMPAT?.toLowerCase()
+  const resolvedCompat = options.mcpCompat || (envCompat === 'codex' ? 'codex' : 'standard')
 
   // Resolve content folder: positional arg > --contentFolder > ./docs
   const positionalFolder = container.argv._[1] as string | undefined
@@ -309,6 +313,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     port: options.port,
     serverName: 'contentbase',
     serverVersion: '1.0.0',
+    mcpCompat: options.mcpCompat,
   }) as any
 
   // =========================================================================
@@ -987,11 +992,13 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   await mcpServer.start({
     transport: options.transport,
     port: options.port,
+    mcpCompat: options.mcpCompat,
   })
 
   if (options.transport === 'http') {
     console.log(`\nContentbase MCP listening on http://localhost:${options.port}/mcp`)
     console.log(`Transport: HTTP (Streamable)`)
+    console.log(`Compatibility: ${resolvedCompat}`)
   } else {
     console.error(`[cbase mcp] Server started (stdio transport)`)
     console.error(`[cbase mcp] Tools: ${mcpServer._tools.size} | Resources: ${mcpServer._resources.size} | Prompts: ${mcpServer._prompts.size}`)
@@ -1022,6 +1029,7 @@ cbase mcp [contentFolder] [options]
 |--------|---------|-------------|
 | \`--transport\` | \`stdio\` | Transport mode: \`stdio\` or \`http\` |
 | \`--port\` | \`3003\` | Port for HTTP transport |
+| \`--mcpCompat\` | \`standard\` | HTTP compatibility profile: \`standard\` or \`codex\` (or set \`MCP_HTTP_COMPAT\`) |
 | \`--modulePath\` | | Path to collection entry module |
 | \`--contentFolder\` | | Path to content folder |
 
@@ -1041,6 +1049,9 @@ cbase mcp
 
 # Start with HTTP transport
 cbase mcp --transport http --port 3003
+
+# Start with Codex HTTP compatibility mode
+cbase mcp --transport http --port 3003 --mcpCompat codex
 
 # Serve a specific content folder
 cbase mcp ./docs

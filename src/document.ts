@@ -54,6 +54,7 @@ export class Document {
   }
 
   get title(): string {
+    if (this.#meta.title) return String(this.#meta.title);
     const heading = this.astQuery.select("heading");
     return heading ? toString(heading) : this.id;
   }

@@ -29,6 +29,19 @@ export function validateDocument(
     errors.push(...metaResult.error.issues);
   }
 
+  // Validate title: require H1 heading unless titleOptional or meta.title exists
+  if (!definition.titleOptional) {
+    const hasMetaTitle = !!document.meta.title;
+    const hasH1 = !!document.astQuery.select("heading");
+    if (!hasMetaTitle && !hasH1) {
+      errors.push({
+        code: "custom",
+        path: ["title"],
+        message: `Document "${document.id}" is missing a title. Add an H1 heading or set meta.title.`,
+      });
+    }
+  }
+
   // Validate sections
   if (definition.sections) {
     for (const [key, sd] of Object.entries(definition.sections)) {
