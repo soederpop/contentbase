@@ -43,6 +43,44 @@ async function handler(options: z.infer<typeof argsSchema>) {
 
 commands.register('teach', {
   description: 'Output combined documentation (MODELS.md + TOC + CLI.md + PRIMER.md) for LLM context',
+  help: `# cbase teach
+
+Output combined documentation suitable for feeding to an LLM as context. Concatenates the models summary, table of contents, CLI reference, and API primer into a single stream.
+
+## Usage
+
+\`\`\`
+cbase teach [options]
+\`\`\`
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| \`--contentFolder\` | Path to content folder |
+
+## Output
+
+Writes to stdout in this order:
+
+1. **MODELS.md** — Model definitions summary
+2. **TABLE-OF-CONTENTS.md** — Document listing
+3. **CLI.md** — CLI reference
+4. **PRIMER.md** — API primer
+
+## Examples
+
+\`\`\`bash
+# Print full documentation
+cbase teach
+
+# Save to a file for LLM context
+cbase teach > context.md
+
+# Teach from a specific content folder
+cbase teach --contentFolder ./docs
+\`\`\`
+`,
   argsSchema,
   handler,
 })

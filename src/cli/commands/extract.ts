@@ -123,6 +123,52 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('extract', {
   description: 'Extract specific sections from documents',
+  help: `# cbase extract
+
+Extract specific sections from one or more documents. Supports glob patterns for matching multiple documents and outputs clean markdown with normalized headings.
+
+## Usage
+
+\`\`\`
+cbase extract <target> --sections "Section1,Section2" [options]
+\`\`\`
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| \`target\` | Path ID or glob pattern (e.g. \`epics/*\`, \`tasks/auth-*\`) |
+
+## Options
+
+| Option | Alias | Description |
+|--------|-------|-------------|
+| \`--sections\` | \`-s\` | **Required.** Comma-separated section headings to extract |
+| \`--title\` | \`-t\` | Add a top-level H1 title to the output |
+| \`--frontmatter\` | | Include YAML frontmatter in the output |
+| \`--noNormalizeHeadings\` | | Skip heading depth normalization |
+| \`--contentFolder\` | | Path to content folder |
+
+## Heading Normalization
+
+By default, extracted headings are re-leveled so the output starts at H1 (or H2 when \`--title\` is used). Use \`--noNormalizeHeadings\` to preserve original depths.
+
+## Examples
+
+\`\`\`bash
+# Extract Overview from a single document
+cbase extract epics/auth-system --sections "Overview"
+
+# Extract multiple sections
+cbase extract tasks/login-bug -s "Overview,Requirements,Acceptance Criteria"
+
+# Extract from all epics with a title wrapper
+cbase extract "epics/*" -s "Overview" -t "Epic Summaries"
+
+# Include frontmatter in output
+cbase extract epics/auth-system -s "Overview" --frontmatter
+\`\`\`
+`,
   argsSchema,
   handler,
 })

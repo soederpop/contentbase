@@ -674,6 +674,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       const content = matter.stringify(body, metaData)
 
       await collection.saveItem(args.pathId, { content })
+      await collection.load({ refresh: true })
 
       return textResult(JSON.stringify({
         created: args.pathId,
@@ -700,6 +701,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
       const fullContent = matter.stringify(newContent, newMeta)
       await collection.saveItem(args.pathId, { content: fullContent })
+      await collection.load({ refresh: true })
 
       return textResult(JSON.stringify({
         updated: args.pathId,
@@ -739,6 +741,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
       const fullContent = matter.stringify(doc.content, doc.meta)
       await collection.saveItem(args.pathId, { content: fullContent })
+      await collection.load({ refresh: true })
 
       return textResult(JSON.stringify({
         updated: args.pathId,
@@ -759,6 +762,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       }
 
       await collection.deleteItem(args.pathId)
+      await collection.load({ refresh: true })
       return textResult(JSON.stringify({ deleted: args.pathId }, null, 2))
     },
   })
@@ -996,6 +1000,55 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('mcp', {
   description: 'Start an MCP server for AI agents to query and manage structured markdown content',
+  help: `# cbase mcp
+
+Start an MCP (Model Context Protocol) server that exposes collection tools, resources, and prompts for AI agents. Supports both stdio and HTTP transports.
+
+## Usage
+
+\`\`\`
+cbase mcp [contentFolder] [options]
+\`\`\`
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| \`contentFolder\` | Path to content folder (positional or via \`--contentFolder\`) |
+
+## Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| \`--transport\` | \`stdio\` | Transport mode: \`stdio\` or \`http\` |
+| \`--port\` | \`3003\` | Port for HTTP transport |
+| \`--modulePath\` | | Path to collection entry module |
+| \`--contentFolder\` | | Path to content folder |
+
+## Exposed Capabilities
+
+**Tools:** read_me, inspect, get_model_info, list_documents, query, search_content, text_search, validate, create_document, update_document, update_section, delete_document, run_action
+
+**Resources:** schema, table of contents, models summary, primer, per-document resources
+
+**Prompts:** create-<model>, review-document, teach, query-guide
+
+## Examples
+
+\`\`\`bash
+# Start with stdio (for Claude Desktop, Cursor, etc.)
+cbase mcp
+
+# Start with HTTP transport
+cbase mcp --transport http --port 3003
+
+# Serve a specific content folder
+cbase mcp ./docs
+
+# Use in claude_desktop_config.json
+# { "command": "cbase", "args": ["mcp", "./docs"] }
+\`\`\`
+`,
   argsSchema,
   handler,
 })

@@ -72,6 +72,53 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('console', {
   description: 'Start an interactive REPL with collection and container features in scope',
+  help: `# cbase console
+
+Start an interactive REPL with the loaded collection, all container features, and optional user-defined exports in scope. Useful for exploring and debugging your content.
+
+## Usage
+
+\`\`\`
+cbase console [options]
+\`\`\`
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| \`--contentFolder\` | Path to content folder |
+
+## Scope
+
+The REPL has these variables available:
+
+- \`collection\` — The loaded Collection instance
+- All luca container features (fs, ui, grep, etc.)
+- Exports from \`cbase.console.ts\` if present in the project root
+
+## Custom Console Module
+
+Create a \`cbase.console.ts\` file in your project root to add custom helpers to the REPL scope:
+
+\`\`\`typescript
+export const myHelper = () => "hello from console"
+\`\`\`
+
+## Examples
+
+\`\`\`bash
+# Start the REPL
+cbase console
+
+# Start with a specific content folder
+cbase console --contentFolder ./docs
+
+# Once inside the REPL:
+#   collection.available           — list all document IDs
+#   collection.document('posts/hello')  — load a document
+#   .exit                          — quit
+\`\`\`
+`,
   argsSchema,
   handler,
 })

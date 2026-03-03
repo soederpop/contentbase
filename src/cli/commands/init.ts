@@ -60,5 +60,40 @@ collection.register(Post);
 
 commands.register('init', {
   description: 'Initialize a new contentbase project',
+  help: `# cbase init
+
+Scaffold a new contentbase project with a sample model and document.
+
+## Usage
+
+\`\`\`
+cbase init [name]
+\`\`\`
+
+## Arguments
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| \`name\` | Directory name for the project | \`my-content\` |
+
+## What It Creates
+
+- \`<name>/models.ts\` — Model definitions with a sample Post model
+- \`<name>/index.ts\` — Collection entry point
+- \`<name>/posts/hello-world.md\` — Sample document
+
+## Examples
+
+\`\`\`bash
+# Create with default name
+cbase init
+
+# Create with custom name
+cbase init docs
+
+# Create in a subdirectory
+cbase init content/blog
+\`\`\`
+`,
   handler,
 })

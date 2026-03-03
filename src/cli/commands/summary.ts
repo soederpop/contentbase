@@ -24,6 +24,37 @@ async function handler(options: z.infer<typeof argsSchema>) {
 
 commands.register('summary', {
   description: 'Generate MODELS.md and TABLE-OF-CONTENTS.md for the collection',
+  help: `# cbase summary
+
+Generate documentation files for the collection. Writes \`MODELS.md\` (model definitions summary) and \`TABLE-OF-CONTENTS.md\` (document listing) to the content root.
+
+## Usage
+
+\`\`\`
+cbase summary [options]
+\`\`\`
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| \`--contentFolder\` | Path to content folder |
+
+## Generated Files
+
+- **MODELS.md** — Overview of all registered models with fields, sections, and relationships
+- **TABLE-OF-CONTENTS.md** — Listing of all documents organized by model
+
+## Examples
+
+\`\`\`bash
+# Generate summary files
+cbase summary
+
+# Generate for a specific content folder
+cbase summary --contentFolder ./docs
+\`\`\`
+`,
   argsSchema,
   handler,
 })

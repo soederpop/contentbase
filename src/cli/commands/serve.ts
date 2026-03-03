@@ -202,6 +202,61 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('serve', {
   description: 'Start an HTTP server for the collection with REST API and document serving',
+  help: `# cbase serve
+
+Start an HTTP server with REST API endpoints for querying, creating, updating, and deleting documents. Serves static files and auto-generates an OpenAPI spec.
+
+## Usage
+
+\`\`\`
+cbase serve [contentFolder] [options]
+\`\`\`
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| \`contentFolder\` | Path to content folder (positional or via \`--contentFolder\`) |
+
+## Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| \`--port\` | \`8000\` | Port to listen on |
+| \`--force\` | \`false\` | Kill existing process on the port |
+| \`--anyPort\` | \`false\` | Find next available port if taken |
+| \`--open\` | \`false\` | Open browser after starting |
+| \`--readOnly\` | \`false\` | Disable write endpoints |
+| \`--cors\` | \`true\` | Enable CORS |
+| \`--staticDir\` | \`public/\` | Directory for static file serving |
+| \`--endpointsDir\` | auto | Directory for user endpoint modules |
+| \`--modulePath\` | | Path to collection entry module |
+| \`--refreshInterval\` | \`60\` | Seconds between collection rescans |
+| \`--contentFolder\` | | Path to content folder |
+
+## User Endpoints
+
+Place endpoint modules in \`endpoints/\` or \`src/endpoints/\` and they'll be auto-mounted. Use \`--endpointsDir\` to override.
+
+## Examples
+
+\`\`\`bash
+# Start on default port
+cbase serve
+
+# Serve a specific folder on a custom port
+cbase serve ./docs --port 3000
+
+# Force kill existing server and open browser
+cbase serve --port 8000 --force --open
+
+# Read-only mode for production
+cbase serve --readOnly --port 8080
+
+# Find any available port
+cbase serve --anyPort
+\`\`\`
+`,
   argsSchema,
   handler,
 })

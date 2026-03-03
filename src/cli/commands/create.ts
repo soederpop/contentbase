@@ -130,6 +130,56 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('create', {
   description: 'Create a new document for a model type',
+  help: `# cbase create
+
+Create a new document for a registered model, with proper frontmatter defaults and section scaffolding.
+
+## Usage
+
+\`\`\`
+cbase create <model> --title "Document Title" [options]
+\`\`\`
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| \`model\` | Model name (e.g. \`Post\`, \`Epic\`, \`Task\`) |
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| \`--title\` | **Required.** Title for the new document (used as H1 and slug) |
+| \`--meta.*\` | Set frontmatter fields (e.g. \`--meta.status active\`) |
+| \`--contentFolder\` | Path to content folder |
+
+## Template Lookup
+
+If \`templates/<model>.md\` (or \`.mdx\`) exists in the content root, it will be used as the document scaffold. Template frontmatter is merged with schema defaults and CLI overrides.
+
+## Meta Priority
+
+Frontmatter values are merged in this order (last wins):
+
+1. Zod schema defaults
+2. Model definition defaults
+3. Template frontmatter
+4. CLI \`--meta.*\` overrides
+
+## Examples
+
+\`\`\`bash
+# Create a new post
+cbase create Post --title "My First Post"
+
+# Create with meta overrides
+cbase create Task --title "Fix login bug" --meta.status active --meta.priority high
+
+# Create from a different content folder
+cbase create Epic --title "Auth System" --contentFolder ./docs
+\`\`\`
+`,
   argsSchema,
   handler,
 })

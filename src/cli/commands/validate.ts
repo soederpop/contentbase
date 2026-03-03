@@ -85,6 +85,53 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('validate', {
   description: 'Validate documents against their model schemas',
+  help: `# cbase validate
+
+Validate documents against their model schemas. Check frontmatter types, required fields, and optionally fill in missing defaults.
+
+## Usage
+
+\`\`\`
+cbase validate [target] [options]
+\`\`\`
+
+## Arguments
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| \`target\` | A path ID, model name, or \`all\` | \`all\` |
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| \`--setDefaultMeta\` | Write Zod schema defaults to documents with empty frontmatter |
+| \`--contentFolder\` | Path to content folder |
+
+## Exit Codes
+
+- \`0\` — All documents valid
+- \`1\` — One or more validation errors
+
+## Examples
+
+\`\`\`bash
+# Validate everything
+cbase validate
+
+# Validate a single document
+cbase validate epics/auth-system
+
+# Validate all documents of a model
+cbase validate Epic
+
+# Fill in missing defaults and validate
+cbase validate all --setDefaultMeta
+
+# Validate a different content folder
+cbase validate --contentFolder ./docs
+\`\`\`
+`,
   argsSchema,
   handler,
 })

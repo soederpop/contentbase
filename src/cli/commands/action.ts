@@ -38,6 +38,45 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('action', {
   description: 'Run a named action on the collection',
+  help: `# cbase action
+
+Run a named action registered on the collection. Actions are custom functions defined in your collection's entry point.
+
+## Usage
+
+\`\`\`
+cbase action <name> [options]
+\`\`\`
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| \`name\` | The registered action name |
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| \`--contentFolder\` | Path to content folder |
+
+## Output
+
+If the action returns a value, it is printed to stdout (strings directly, objects as JSON).
+
+## Examples
+
+\`\`\`bash
+# Run an action
+cbase action generate-report
+
+# Run an action on a specific content folder
+cbase action sync --contentFolder ./docs
+
+# List available actions (shows error with available names)
+cbase action
+\`\`\`
+`,
   argsSchema,
   handler,
 })

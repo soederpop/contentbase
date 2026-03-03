@@ -86,6 +86,49 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
 
 commands.register('text-search', {
   description: 'Search file contents with pattern matching',
+  help: `# cbase text-search
+
+Search file contents within the collection using ripgrep. Returns matching files by default, or line-level detail with \`--expanded\`.
+
+## Usage
+
+\`\`\`
+cbase text-search <pattern> [options]
+\`\`\`
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| \`pattern\` | Text or regex pattern to search for |
+
+## Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| \`--expanded\` | \`false\` | Show line-level matches instead of just file paths |
+| \`--include\` | | Glob filter for file types (e.g. \`"*.md"\`) |
+| \`--exclude\` | | Glob filter to exclude (e.g. \`"node_modules"\`) |
+| \`--ignoreCase\` | \`false\` | Case-insensitive matching |
+| \`--maxResults\` | | Limit number of results |
+| \`--contentFolder\` | | Path to content folder |
+
+## Examples
+
+\`\`\`bash
+# Find files containing "authentication"
+cbase text-search authentication
+
+# Case-insensitive search with line details
+cbase text-search "TODO" --ignoreCase --expanded
+
+# Search only markdown files
+cbase text-search "status: draft" --include "*.md"
+
+# Limit results
+cbase text-search "import" --maxResults 10 --expanded
+\`\`\`
+`,
   argsSchema,
   handler,
 })
