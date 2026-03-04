@@ -100,6 +100,50 @@ describe("Collection", () => {
     expect(pluginCalled).toBe(true);
   });
 
+  describe("refresh after delete", () => {
+    let tmpDir: string;
+    let tmpCollection: Collection;
+
+    beforeEach(async () => {
+      tmpDir = await fs.mkdtemp(path.join(import.meta.dirname, ".tmp-refresh-"));
+      // Create two documents
+      const epicDir = path.join(tmpDir, "epics");
+      await fs.mkdir(epicDir, { recursive: true });
+      await fs.writeFile(
+        path.join(epicDir, "one.mdx"),
+        "---\nstatus: created\npriority: 1\n---\n# One\n"
+      );
+      await fs.writeFile(
+        path.join(epicDir, "two.mdx"),
+        "---\nstatus: created\npriority: 2\n---\n# Two\n"
+      );
+
+      tmpCollection = new Collection({ rootPath: tmpDir });
+      tmpCollection.register(Epic);
+      await tmpCollection.load();
+    });
+
+    afterEach(async () => {
+      await fs.rm(tmpDir, { recursive: true });
+    });
+
+    it("evicts cached documents whose files were deleted", async () => {
+      // Access a document so it's in the #documents cache
+      const doc = tmpCollection.document("epics/one");
+      expect(doc.title).toBe("One");
+
+      // Delete the file externally
+      await fs.unlink(path.join(tmpDir, "epics", "one.mdx"));
+
+      // Refresh should succeed without ENOENT
+      await tmpCollection.load({ refresh: true });
+
+      // The deleted document should no longer be available
+      expect(tmpCollection.available).not.toContain("epics/one");
+      expect(tmpCollection.available).toContain("epics/two");
+    });
+  });
+
   describe("generateModelSummary", () => {
     let tmpDir: string;
     let tmpCollection: Collection;
@@ -143,21 +187,21 @@ describe("Collection", () => {
       expect(text).toContain("Relationships:");
     });
 
-    it("saveModelSummary writes MODELS.md to rootPath", async () => {
+    it("saveModelSummary writes README.md to rootPath", async () => {
       await tmpCollection.saveModelSummary();
-      const content = await fs.readFile(path.join(tmpDir, "MODELS.md"), "utf8");
+      const content = await fs.readFile(path.join(tmpDir, "README.md"), "utf8");
       expect(content).toContain("# Models");
       expect(content).toContain("## Overview");
       expect(content).toContain("## Summary");
     });
 
     it("saveModelSummary preserves existing Overview content", async () => {
-      // Write an initial MODELS.md with user content in Overview
+      // Write an initial README.md with user content in Overview
       const initial = "# Models\n\n## Overview\n\nThis is my custom overview.\n\n## Summary\n\n```\nold summary\n```\n";
-      await fs.writeFile(path.join(tmpDir, "MODELS.md"), initial, "utf8");
+      await fs.writeFile(path.join(tmpDir, "README.md"), initial, "utf8");
 
       await tmpCollection.saveModelSummary();
-      const content = await fs.readFile(path.join(tmpDir, "MODELS.md"), "utf8");
+      const content = await fs.readFile(path.join(tmpDir, "README.md"), "utf8");
       expect(content).toContain("This is my custom overview.");
       expect(content).toContain("Model: Epic");
     });

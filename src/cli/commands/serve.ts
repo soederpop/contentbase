@@ -17,6 +17,7 @@ const argsSchema = z.object({
   open: z.boolean().default(false),
   readOnly: z.boolean().default(false),
   refreshInterval: z.number().optional(),
+  watch: z.boolean().default(true),
 })
 
 async function handler(options: z.infer<typeof argsSchema>, context: { container: any }) {
@@ -179,7 +180,37 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   }
 
   // ---------------------------------------------------------------------------
-  // Collection refresh interval
+  // File watching
+  // ---------------------------------------------------------------------------
+  if (options.watch !== false) {
+    const fileManager = container.feature('fileManager')
+    await fileManager.start({ rootPath: collection.rootPath })
+    await fileManager.watch()
+
+    const { debounce } = container.utils.lodash
+    const refreshCollection = debounce(async () => {
+      try {
+        const before = collection.available.length
+        await collection.load({ refresh: true })
+        const after = collection.available.length
+        if (after !== before) {
+          console.log(`[watch] Collection refreshed: ${before} → ${after} documents`)
+        }
+      } catch (error) {
+        console.warn(`[watch] Refresh failed: ${(error as Error).message}`)
+      }
+    }, 500)
+
+    fileManager.on('file:change', (event: { type: string; path: string }) => {
+      if (/\.(md|mdx)$/i.test(event.path)) {
+        refreshCollection()
+      }
+    })
+    console.log(`Watching for file changes in ${collection.rootPath}`)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Collection refresh interval (safety-net fallback)
   // ---------------------------------------------------------------------------
   const defaultInterval = container.isProduction ? 10 * 60 : 60 // seconds
   const intervalSeconds = options.refreshInterval ?? defaultInterval
@@ -231,7 +262,8 @@ cbase serve [contentFolder] [options]
 | \`--staticDir\` | \`public/\` | Directory for static file serving |
 | \`--endpointsDir\` | auto | Directory for user endpoint modules |
 | \`--modulePath\` | | Path to collection entry module |
-| \`--refreshInterval\` | \`60\` | Seconds between collection rescans |
+| \`--refreshInterval\` | \`60\` | Seconds between collection rescans (fallback) |
+| \`--disable-watch\` | \`false\` | Disable file watching for automatic collection refresh |
 | \`--contentFolder\` | | Path to content folder |
 
 ## User Endpoints

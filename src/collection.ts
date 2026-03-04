@@ -268,6 +268,12 @@ export class Collection {
 
     // Refresh any already-created documents
     if (this.#loaded && refresh) {
+      // Evict documents that no longer exist on disk
+      for (const [pathId] of this.#documents) {
+        if (!this.#items.has(pathId)) {
+          this.#documents.delete(pathId);
+        }
+      }
       await Promise.all(
         Array.from(this.#documents.values()).map((doc) => doc.reload())
       );
@@ -406,6 +412,12 @@ export class Collection {
     options: { content: string; extension?: string }
   ): Promise<CollectionItem> {
     const extension = options.extension ?? ".md";
+    if (options.content == null) {
+      throw new Error(
+        `saveItem("${pathId}"): content must be a string, got ${typeof options.content}. ` +
+        `Use doc.save() or pass the full raw content including frontmatter.`
+      );
+    }
     const { data, content } = matter(options.content);
 
     if (!this.#items.has(pathId)) {
@@ -742,13 +754,13 @@ export class Collection {
   }
 
   /**
-   * Write MODELS.md to the collection root.
+   * Write README.md to the collection root.
    * Preserves the `## Overview` section if it already exists.
    * The generated summary is placed in the `## Summary` section.
    */
   async saveModelSummary(): Promise<string> {
     const summary = this.generateModelSummary();
-    const modelsPath = path.join(this.rootPath, "MODELS.md");
+    const modelsPath = path.join(this.rootPath, "README.md");
 
     // Preserve existing Overview section content
     let overview = "";

@@ -16,6 +16,7 @@ const argsSchema = z.object({
   modulePath: z.string().optional(),
   mcpCompat: z.enum(['standard', 'codex']).optional(),
   stdioCompat: z.enum(['standard', 'codex', 'auto']).optional(),
+  watch: z.boolean().default(true),
 })
 
 // ---------------------------------------------------------------------------
@@ -341,7 +342,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
   mcpServer.resource('contentbase://models-summary', {
     name: 'Models Summary',
-    description: 'Generated MODELS.md describing all model definitions with attributes, sections, and relationships',
+    description: 'Generated README.md describing all model definitions with attributes, sections, and relationships',
     mimeType: 'text/markdown',
     handler: () => collection.generateModelSummary(),
   })
@@ -495,6 +496,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
         'Sort specification, e.g. { "meta.priority": "desc" }',
       ),
       select: z.array(z.string()).optional().describe('Fields to include in output (default: all)'),
+      related: z.array(z.string()).optional().describe('Relationship names to include in results (e.g. ["plans", "goal"])'),
       scopes: z.array(z.string()).optional().describe('Named scopes to apply before filtering'),
       limit: z.number().optional().describe('Maximum results to return'),
       offset: z.number().optional().describe('Number of results to skip'),
@@ -528,6 +530,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
           where: whereClause,
           sort: args.sort,
           select: args.select,
+          related: args.related,
           scopes: args.scopes,
           limit: args.limit,
           offset: args.offset,
@@ -1010,6 +1013,36 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     console.error(`[cbase mcp] Stdio compatibility: ${resolvedStdioCompat}`)
     console.error(`[cbase mcp] Tools: ${mcpServer._tools.size} | Resources: ${mcpServer._resources.size} | Prompts: ${mcpServer._prompts.size}`)
   }
+
+  // ---------------------------------------------------------------------------
+  // File watching
+  // ---------------------------------------------------------------------------
+  if (options.watch !== false) {
+    const fileManager = container.feature('fileManager')
+    await fileManager.start({ rootPath: collection.rootPath })
+    await fileManager.watch()
+
+    const { debounce } = container.utils.lodash
+    const refreshCollection = debounce(async () => {
+      try {
+        const before = collection.available.length
+        await collection.load({ refresh: true })
+        const after = collection.available.length
+        if (after !== before) {
+          console.error(`[watch] Collection refreshed: ${before} → ${after} documents`)
+        }
+      } catch (err) {
+        console.error(`[watch] Refresh failed: ${(err as Error).message}`)
+      }
+    }, 500)
+
+    fileManager.on('file:change', (event: { type: string; path: string }) => {
+      if (/\.(md|mdx)$/i.test(event.path)) {
+        refreshCollection()
+      }
+    })
+    console.error(`[cbase mcp] Watching for file changes in ${collection.rootPath}`)
+  }
 }
 
 commands.register('mcp', {
@@ -1040,6 +1073,7 @@ cbase mcp [contentFolder] [options]
 | \`--stdioCompat\` | \`standard\` | Stdio framing profile: \`standard\`, \`codex\`, or \`auto\` (or set \`MCP_STDIO_COMPAT\`) |
 | \`--modulePath\` | | Path to collection entry module |
 | \`--contentFolder\` | | Path to content folder |
+| \`--disable-watch\` | \`false\` | Disable file watching for automatic collection refresh |
 
 ## Exposed Capabilities
 
