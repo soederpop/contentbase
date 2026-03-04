@@ -15,6 +15,7 @@ const argsSchema = z.object({
   contentFolder: z.string().optional(),
   modulePath: z.string().optional(),
   mcpCompat: z.enum(['standard', 'codex']).optional(),
+  stdioCompat: z.enum(['standard', 'codex', 'auto']).optional(),
 })
 
 // ---------------------------------------------------------------------------
@@ -295,6 +296,9 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   const container = context.container
   const envCompat = process.env.MCP_HTTP_COMPAT?.toLowerCase()
   const resolvedCompat = options.mcpCompat || (envCompat === 'codex' ? 'codex' : 'standard')
+  const envStdioCompat = process.env.MCP_STDIO_COMPAT?.toLowerCase()
+  const resolvedStdioCompat = options.stdioCompat
+    || (envStdioCompat === 'codex' || envStdioCompat === 'auto' ? envStdioCompat : 'standard')
 
   // Resolve content folder: positional arg > --contentFolder > ./docs
   const positionalFolder = container.argv._[1] as string | undefined
@@ -314,6 +318,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     serverName: 'contentbase',
     serverVersion: '1.0.0',
     mcpCompat: options.mcpCompat,
+    stdioCompat: options.stdioCompat,
   }) as any
 
   // =========================================================================
@@ -993,6 +998,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     transport: options.transport,
     port: options.port,
     mcpCompat: options.mcpCompat,
+    stdioCompat: options.stdioCompat,
   })
 
   if (options.transport === 'http') {
@@ -1001,6 +1007,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     console.log(`Compatibility: ${resolvedCompat}`)
   } else {
     console.error(`[cbase mcp] Server started (stdio transport)`)
+    console.error(`[cbase mcp] Stdio compatibility: ${resolvedStdioCompat}`)
     console.error(`[cbase mcp] Tools: ${mcpServer._tools.size} | Resources: ${mcpServer._resources.size} | Prompts: ${mcpServer._prompts.size}`)
   }
 }
@@ -1030,6 +1037,7 @@ cbase mcp [contentFolder] [options]
 | \`--transport\` | \`stdio\` | Transport mode: \`stdio\` or \`http\` |
 | \`--port\` | \`3003\` | Port for HTTP transport |
 | \`--mcpCompat\` | \`standard\` | HTTP compatibility profile: \`standard\` or \`codex\` (or set \`MCP_HTTP_COMPAT\`) |
+| \`--stdioCompat\` | \`standard\` | Stdio framing profile: \`standard\`, \`codex\`, or \`auto\` (or set \`MCP_STDIO_COMPAT\`) |
 | \`--modulePath\` | | Path to collection entry module |
 | \`--contentFolder\` | | Path to content folder |
 
@@ -1052,6 +1060,9 @@ cbase mcp --transport http --port 3003
 
 # Start with Codex HTTP compatibility mode
 cbase mcp --transport http --port 3003 --mcpCompat codex
+
+# Start with Codex stdio framing mode
+cbase mcp --stdioCompat codex
 
 # Serve a specific content folder
 cbase mcp ./docs
