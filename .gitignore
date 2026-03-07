@@ -5,3 +5,5 @@ dist
 .claude
 CLAUDE.md
 .env
+
+.claude/local.settings.json

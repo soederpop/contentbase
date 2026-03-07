@@ -1,4 +1,16 @@
 CLAUDE.md
 .claude
 .env
+.mcp.json
+dist/
+bun.lock
+test/
+src/__tests__/
+showcases/
+scripts/
+examples/
+public/
 docs/ideas/*
+vitest.config.ts
+tsconfig.json
+MCP-DESCRIPTIONS-REVIEW.md

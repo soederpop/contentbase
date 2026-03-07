@@ -1,6 +1,6 @@
 {
   "name": "contentbase",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -15,15 +15,8 @@
     "examples": "bun run scripts/examples/run-all.ts",
     "compile": "bun build ./src/cli/index.ts --compile --outfile dist/cnotes --external @node-llama-cpp/*"
   },
-  "peerDependencies": {
-    "@soederpop/luca": ">=0.0.1"
-  },
-  "peerDependenciesMeta": {
-    "@soederpop/luca": {
-      "optional": true
-    }
-  },
   "dependencies": {
+    "@soederpop/luca": "^0.0.2",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "mdast-util-mdxjs-esm": "^2.0.1",
