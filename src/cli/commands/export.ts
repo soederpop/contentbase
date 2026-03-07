@@ -17,14 +17,14 @@ async function handler(options: z.infer<typeof argsSchema>) {
 
 commands.register('export', {
   description: 'Export collection as JSON',
-  help: `# cbase export
+  help: `# cnotes export
 
 Export the entire collection as a JSON object. Each document includes its path ID, title, frontmatter, content, and model info.
 
 ## Usage
 
 \`\`\`
-cbase export [options]
+cnotes export [options]
 \`\`\`
 
 ## Options
@@ -41,16 +41,16 @@ Writes JSON to stdout. Pipe to a file or another tool.
 
 \`\`\`bash
 # Export to stdout
-cbase export
+cnotes export
 
 # Save to a file
-cbase export > backup.json
+cnotes export > backup.json
 
 # Export a specific content folder
-cbase export --contentFolder ./docs > docs.json
+cnotes export --contentFolder ./docs > docs.json
 
 # Pipe to jq for filtering
-cbase export | jq '.[] | select(.meta.status == "published")'
+cnotes export | jq '.[] | select(.meta.status == "published")'
 \`\`\`
 `,
   argsSchema,

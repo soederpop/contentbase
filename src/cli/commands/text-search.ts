@@ -15,7 +15,7 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
   const pattern = container.argv._[1] as string | undefined
 
   if (!pattern) {
-    console.error('Usage: cbase text-search <pattern> [options]')
+    console.error('Usage: cnotes text-search <pattern> [options]')
     console.error('  --expanded      Show line-level matches (default: files only)')
     console.error('  --include       Glob filter (e.g. "*.md")')
     console.error('  --exclude       Glob filter')
@@ -86,14 +86,14 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
 
 commands.register('text-search', {
   description: 'Search file contents with pattern matching',
-  help: `# cbase text-search
+  help: `# cnotes text-search
 
 Search file contents within the collection using ripgrep. Returns matching files by default, or line-level detail with \`--expanded\`.
 
 ## Usage
 
 \`\`\`
-cbase text-search <pattern> [options]
+cnotes text-search <pattern> [options]
 \`\`\`
 
 ## Arguments
@@ -117,16 +117,16 @@ cbase text-search <pattern> [options]
 
 \`\`\`bash
 # Find files containing "authentication"
-cbase text-search authentication
+cnotes text-search authentication
 
 # Case-insensitive search with line details
-cbase text-search "TODO" --ignoreCase --expanded
+cnotes text-search "TODO" --ignoreCase --expanded
 
 # Search only markdown files
-cbase text-search "status: draft" --include "*.md"
+cnotes text-search "status: draft" --include "*.md"
 
 # Limit results
-cbase text-search "import" --maxResults 10 --expanded
+cnotes text-search "import" --maxResults 10 --expanded
 \`\`\`
 `,
   argsSchema,

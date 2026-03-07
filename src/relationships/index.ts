@@ -7,7 +7,10 @@ import type {
 
 /**
  * Declare a hasMany relationship.
- * Child models are extracted from sub-headings under a parent heading.
+ *
+ * Two modes:
+ * - `heading`: Children are extracted from sub-headings under a parent heading in the document.
+ * - `foreignKey`: Children are found by querying target documents where meta[foreignKey] matches this document's slug.
  *
  * The target parameter is a thunk (() => ModelDef) to allow circular references.
  */
@@ -16,7 +19,8 @@ export function hasMany<
 >(
   target: () => TTarget,
   options: {
-    heading: string;
+    heading?: string;
+    foreignKey?: string;
     meta?: (self: any) => Record<string, unknown>;
     id?: (slug: string) => string;
   }
@@ -25,6 +29,7 @@ export function hasMany<
     type: "hasMany",
     target,
     heading: options.heading,
+    foreignKey: options.foreignKey,
     meta: options.meta,
     id: options.id,
   };

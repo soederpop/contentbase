@@ -23,7 +23,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
   const target = context.container.argv._[1] as string | undefined
   if (!target) {
-    console.error('Usage: cbase extract <target> --sections "Section1,Section2"')
+    console.error('Usage: cnotes extract <target> --sections "Section1,Section2"')
     process.exit(1)
   }
 
@@ -123,14 +123,14 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('extract', {
   description: 'Extract specific sections from documents',
-  help: `# cbase extract
+  help: `# cnotes extract
 
 Extract specific sections from one or more documents. Supports glob patterns for matching multiple documents and outputs clean markdown with normalized headings.
 
 ## Usage
 
 \`\`\`
-cbase extract <target> --sections "Section1,Section2" [options]
+cnotes extract <target> --sections "Section1,Section2" [options]
 \`\`\`
 
 ## Arguments
@@ -157,16 +157,16 @@ By default, extracted headings are re-leveled so the output starts at H1 (or H2 
 
 \`\`\`bash
 # Extract Overview from a single document
-cbase extract epics/auth-system --sections "Overview"
+cnotes extract epics/auth-system --sections "Overview"
 
 # Extract multiple sections
-cbase extract tasks/login-bug -s "Overview,Requirements,Acceptance Criteria"
+cnotes extract tasks/login-bug -s "Overview,Requirements,Acceptance Criteria"
 
 # Extract from all epics with a title wrapper
-cbase extract "epics/*" -s "Overview" -t "Epic Summaries"
+cnotes extract "epics/*" -s "Overview" -t "Epic Summaries"
 
 # Include frontmatter in output
-cbase extract epics/auth-system -s "Overview" --frontmatter
+cnotes extract epics/auth-system -s "Overview" --frontmatter
 \`\`\`
 `,
   argsSchema,

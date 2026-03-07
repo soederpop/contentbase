@@ -19,7 +19,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
   const modelName = context.container.argv._[1] as string | undefined
   if (!modelName) {
-    console.error('Usage: cbase create <model> --title "Document Title"')
+    console.error('Usage: cnotes create <model> --title "Document Title"')
     process.exit(1)
   }
 
@@ -130,14 +130,14 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('create', {
   description: 'Create a new document for a model type',
-  help: `# cbase create
+  help: `# cnotes create
 
 Create a new document for a registered model, with proper frontmatter defaults and section scaffolding.
 
 ## Usage
 
 \`\`\`
-cbase create <model> --title "Document Title" [options]
+cnotes create <model> --title "Document Title" [options]
 \`\`\`
 
 ## Arguments
@@ -171,13 +171,13 @@ Frontmatter values are merged in this order (last wins):
 
 \`\`\`bash
 # Create a new post
-cbase create Post --title "My First Post"
+cnotes create Post --title "My First Post"
 
 # Create with meta overrides
-cbase create Task --title "Fix login bug" --meta.status active --meta.priority high
+cnotes create Task --title "Fix login bug" --meta.status active --meta.priority high
 
 # Create from a different content folder
-cbase create Epic --title "Auth System" --contentFolder ./docs
+cnotes create Epic --title "Auth System" --contentFolder ./docs
 \`\`\`
 `,
   argsSchema,

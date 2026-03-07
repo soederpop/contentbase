@@ -1,6 +1,6 @@
 # Contentbase API Primer
 
-This document teaches you how to use contentbase by example, using theoretical models (`BlogPost`, `Author`, `Tag`). Pair this with your project's generated `MODELS.md` (run `cbase summary`) to understand the specific models, attributes, sections, relationships, and computed properties available.
+This document teaches you how to use contentbase by example, using theoretical models (`BlogPost`, `Author`, `Tag`). Pair this with your project's generated `MODELS.md` (run `cnotes summary`) to understand the specific models, attributes, sections, relationships, and computed properties available.
 
 All examples below assume you already have a loaded collection:
 

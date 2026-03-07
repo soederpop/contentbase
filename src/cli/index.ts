@@ -24,12 +24,12 @@ async function main() {
     return
   }
 
-  // `cbase help <command>` — show that command's help
+  // `cnotes help <command>` — show that command's help
   if (commandName === 'help' && container.argv._[1]) {
     const target = container.argv._[1] as string
     if (!commands.has(target)) {
       console.error(`Unknown command: ${target}`)
-      console.error(`Run "cbase help" to see available commands.\n`)
+      console.error(`Run "cnotes help" to see available commands.\n`)
       process.exit(1)
     }
     const def = commands.get(target)!
@@ -44,13 +44,13 @@ async function main() {
 
   if (!commands.has(commandName)) {
     console.error(`Unknown command: ${commandName}`)
-    console.error(`Run "cbase help" to see available commands.\n`)
+    console.error(`Run "cnotes help" to see available commands.\n`)
     process.exit(1)
   }
 
   const def = commands.get(commandName)!
 
-  // `cbase <command> --help` — show that command's help
+  // `cnotes <command> --help` — show that command's help
   if (wantsHelp) {
     if (def.help) {
       await renderMarkdown(container, def.help)
@@ -73,7 +73,7 @@ async function main() {
         console.error(`  ${issue.path.join('.')}: ${issue.message}`)
       }
       if (def.help) {
-        console.error(`\nRun "cbase ${commandName} --help" for usage information.`)
+        console.error(`\nRun "cnotes ${commandName} --help" for usage information.`)
       }
       process.exit(1)
     }

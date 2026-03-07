@@ -9,8 +9,8 @@ The goal is to make contentbase usable in the browser so that a web application 
 
 There are two modes of operation:
 
-1. **Static snapshot** — Load a collection from a single JSON dump produced by `cbase export`
-2. **Live server** — Point at a `cbase serve` URL and fetch data over the API
+1. **Static snapshot** — Load a collection from a single JSON dump produced by `cnotes export`
+2. **Live server** — Point at a `cnotes serve` URL and fetch data over the API
 
 Both modes should produce the same `Collection` interface. The consumer shouldn't care where the data came from.
 
@@ -53,7 +53,7 @@ const query = collection.query(Idea)
 const ideas = await query.whereEq("meta.status", "exploring").fetchAll()
 ```
 
-The snapshot shape should be the output of `cbase export --content` — everything the collection needs to populate `#items` and register models:
+The snapshot shape should be the output of `cnotes export --content` — everything the collection needs to populate `#items` and register models:
 
 ```ts
 interface CollectionSnapshot {
@@ -100,7 +100,7 @@ const collection = Collection.fromJSON(snapshot, {
 
 ### `Collection.fromServer(baseURL)` — API Client Mode
 
-A static factory that creates a collection backed by the `cbase serve` API instead of the filesystem.
+A static factory that creates a collection backed by the `cnotes serve` API instead of the filesystem.
 
 ```ts
 const collection = await Collection.fromServer("https://my-site.com")
@@ -148,13 +148,13 @@ Bundlers like Vite, esbuild, and webpack can use the `exports` field in package.
 }
 ```
 
-### Enhanced `cbase export` for Browser Consumption
+### Enhanced `cnotes export` for Browser Consumption
 
-The current `cbase export` outputs model instance data but doesn't include raw content. For the browser build, we need a `--content` flag (or `--browser`) that produces the full snapshot:
+The current `cnotes export` outputs model instance data but doesn't include raw content. For the browser build, we need a `--content` flag (or `--browser`) that produces the full snapshot:
 
 ```bash
 # produce a browser-ready snapshot
-cbase export --content > public/collection.json
+cnotes export --content > public/collection.json
 ```
 
 This already partially exists — `collection.toJSON({ content: true })` includes the items map. The export command just needs to pass the option through and ensure the output shape matches what `Collection.fromJSON()` expects.
@@ -163,7 +163,7 @@ This already partially exists — `collection.toJSON({ content: true })` include
 
 - **Static sites** — Generate a collection.json at build time, ship it alongside your SPA. Full query/model/relationship support with zero runtime server.
 - **Documentation browsers** — Interactive documentation UIs powered by the same model definitions used at authoring time.
-- **Live editing** — Point at a running `cbase serve` instance and build a CMS-like editor in the browser with full save/delete support through the API.
+- **Live editing** — Point at a running `cnotes serve` instance and build a CMS-like editor in the browser with full save/delete support through the API.
 - **Embedded components** — Drop a `<ContentBrowser collection="./data.json" />` into any React/Vue/Svelte app.
 
 ## Implementation Phases
@@ -173,7 +173,7 @@ This already partially exists — `collection.toJSON({ content: true })` include
 - Add `Collection.fromJSON(snapshot, options?)` static method
 - Create `src/browser.ts` entry point that avoids Node imports
 - Abstract the `path` usage behind a tiny helper that works in both environments
-- Enhance `cbase export --content` to produce the full snapshot format
+- Enhance `cnotes export --content` to produce the full snapshot format
 - Ship with `"browser"` condition in package.json exports
 
 ### Phase 2 — `Collection.fromServer(baseURL)`

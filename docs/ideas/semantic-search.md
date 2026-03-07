@@ -102,18 +102,18 @@ This produces less noisy embeddings with richer semantic signal.
 
 ```bash
 # Build/update the vector index (only re-embeds changed docs)
-cbase embed
+cnotes embed
 
 # Search
-cbase search "how do we handle authentication"
+cnotes search "how do we handle authentication"
 
 # Search within a specific model
-cbase search "deployment steps" --model Tutorial
+cnotes search "deployment steps" --model Tutorial
 ```
 
 ### Incremental Updates
 
-Track a hash of each document's content alongside its embedding. On `cbase embed`, only re-embed documents whose hash has changed. For a 500-doc collection with 5 changed files, this takes <100ms instead of 5 seconds.
+Track a hash of each document's content alongside its embedding. On `cnotes embed`, only re-embed documents whose hash has changed. For a 500-doc collection with 5 changed files, this takes <100ms instead of 5 seconds.
 
 ### Storage
 
@@ -151,12 +151,12 @@ const collection = new Collection(rootPath, {
 ## Constraints
 
 - Semantic search is a **CLI / server feature**, not available in pure library mode or the browser build. It depends on sqlite-vec which requires native SQLite extensions.
-- The browser build could still query semantic search results via the `cbase serve` API (`POST /api/search`).
+- The browser build could still query semantic search results via the `cnotes serve` API (`POST /api/search`).
 - The vector DB is a derived cache, never a source of truth. The markdown files remain authoritative.
 
 ## Open Questions
 
-- Should `cbase serve` auto-build the vector index on startup if missing?
+- Should `cnotes serve` auto-build the vector index on startup if missing?
 - Should the MCP server expose semantic search as a tool?
 - Is there value in embedding individual sections rather than whole documents for more granular search?
 - Should we support hybrid search (keyword + semantic) or keep them separate?

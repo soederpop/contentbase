@@ -14,7 +14,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   const actionName = context.container.argv._[1] as string | undefined
 
   if (!actionName) {
-    console.error('Usage: cbase action <name>')
+    console.error('Usage: cnotes action <name>')
     console.error(`Available: ${collection.availableActions.join(', ') || '(none)'}`)
     process.exit(1)
   }
@@ -38,14 +38,14 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('action', {
   description: 'Run a named action on the collection',
-  help: `# cbase action
+  help: `# cnotes action
 
 Run a named action registered on the collection. Actions are custom functions defined in your collection's entry point.
 
 ## Usage
 
 \`\`\`
-cbase action <name> [options]
+cnotes action <name> [options]
 \`\`\`
 
 ## Arguments
@@ -68,13 +68,13 @@ If the action returns a value, it is printed to stdout (strings directly, object
 
 \`\`\`bash
 # Run an action
-cbase action generate-report
+cnotes action generate-report
 
 # Run an action on a specific content folder
-cbase action sync --contentFolder ./docs
+cnotes action sync --contentFolder ./docs
 
 # List available actions (shows error with available names)
-cbase action
+cnotes action
 \`\`\`
 `,
   argsSchema,

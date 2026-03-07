@@ -85,14 +85,14 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('validate', {
   description: 'Validate documents against their model schemas',
-  help: `# cbase validate
+  help: `# cnotes validate
 
 Validate documents against their model schemas. Check frontmatter types, required fields, and optionally fill in missing defaults.
 
 ## Usage
 
 \`\`\`
-cbase validate [target] [options]
+cnotes validate [target] [options]
 \`\`\`
 
 ## Arguments
@@ -117,19 +117,19 @@ cbase validate [target] [options]
 
 \`\`\`bash
 # Validate everything
-cbase validate
+cnotes validate
 
 # Validate a single document
-cbase validate epics/auth-system
+cnotes validate epics/auth-system
 
 # Validate all documents of a model
-cbase validate Epic
+cnotes validate Epic
 
 # Fill in missing defaults and validate
-cbase validate all --setDefaultMeta
+cnotes validate all --setDefaultMeta
 
 # Validate a different content folder
-cbase validate --contentFolder ./docs
+cnotes validate --contentFolder ./docs
 \`\`\`
 `,
   argsSchema,

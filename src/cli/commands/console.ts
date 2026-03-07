@@ -26,7 +26,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   }
 
   // Load user console module if present
-  const consoleModulePath = container.paths.resolve('cbase.console.ts')
+  const consoleModulePath = container.paths.resolve('cnotes.console.ts')
   let consoleModuleLoaded = false
   let consoleModuleError: Error | null = null
 
@@ -41,14 +41,14 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     }
   }
 
-  const prompt = ui.colors.cyan('cbase') + ui.colors.dim(' > ')
+  const prompt = ui.colors.cyan('cnotes') + ui.colors.dim(' > ')
 
   console.log()
   console.log(ui.colors.dim('  Contentbase REPL — collection and container features in scope. Tab to autocomplete.'))
   if (consoleModuleLoaded) {
-    console.log(ui.colors.dim('  Loaded cbase.console.ts exports into scope.'))
+    console.log(ui.colors.dim('  Loaded cnotes.console.ts exports into scope.'))
   } else if (consoleModuleError) {
-    console.log(ui.colors.yellow('  Warning: Failed to load cbase.console.ts:'))
+    console.log(ui.colors.yellow('  Warning: Failed to load cnotes.console.ts:'))
     console.log(ui.colors.yellow(`    ${consoleModuleError.message}`))
     console.log(ui.colors.dim('  The REPL will start without your custom exports.'))
   }
@@ -72,14 +72,14 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('console', {
   description: 'Start an interactive REPL with collection and container features in scope',
-  help: `# cbase console
+  help: `# cnotes console
 
 Start an interactive REPL with the loaded collection, all container features, and optional user-defined exports in scope. Useful for exploring and debugging your content.
 
 ## Usage
 
 \`\`\`
-cbase console [options]
+cnotes console [options]
 \`\`\`
 
 ## Options
@@ -94,11 +94,11 @@ The REPL has these variables available:
 
 - \`collection\` — The loaded Collection instance
 - All luca container features (fs, ui, grep, etc.)
-- Exports from \`cbase.console.ts\` if present in the project root
+- Exports from \`cnotes.console.ts\` if present in the project root
 
 ## Custom Console Module
 
-Create a \`cbase.console.ts\` file in your project root to add custom helpers to the REPL scope:
+Create a \`cnotes.console.ts\` file in your project root to add custom helpers to the REPL scope:
 
 \`\`\`typescript
 export const myHelper = () => "hello from console"
@@ -108,10 +108,10 @@ export const myHelper = () => "hello from console"
 
 \`\`\`bash
 # Start the REPL
-cbase console
+cnotes console
 
 # Start with a specific content folder
-cbase console --contentFolder ./docs
+cnotes console --contentFolder ./docs
 
 # Once inside the REPL:
 #   collection.available           — list all document IDs

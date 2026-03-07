@@ -10,6 +10,7 @@ export const getSchema = z.object({
   model: z.string(),
   where: z.string().optional(),
   select: z.string().optional(),
+  related: z.string().optional(),
 })
 
 export const postSchema = queryDSLSchema
@@ -56,9 +57,10 @@ export async function get(params: any, ctx: any) {
 
   const results = await q.fetchAll()
   const selectFields = params.select ? params.select.split(',').map((s: string) => s.trim()) : null
+  const relatedFields = params.related ? params.related.split(',').map((s: string) => s.trim()) : undefined
 
   return results.map((instance: any) => {
-    const json = instance.toJSON()
+    const json = instance.toJSON({ related: relatedFields })
     if (selectFields && selectFields.length > 0) {
       const filtered: Record<string, any> = {}
       for (const key of selectFields) {

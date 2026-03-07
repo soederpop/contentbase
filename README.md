@@ -680,32 +680,32 @@ collection.use(timestampPlugin, { format: "iso" });
 
 ## CLI
 
-Contentbase ships with a CLI available as both `cbase` and `contentbase`. See [CLI.md](./CLI.md) for the full reference with examples for every command.
+Contentbase ships with a CLI available as both `cnotes` and `contentbase`. See [CLI.md](./CLI.md) for the full reference with examples for every command.
 
 ```bash
 bun add contentbase
 
 # Then use it via bunx, or in package.json scripts
-bunx cbase inspect
+bunx cnotes inspect
 ```
 
 ### Commands
 
 ```bash
-cbase init [name]                             # scaffold a new project
-cbase create <Model> --title "..."            # scaffold a new document (uses templates if available)
-cbase inspect                                 # show models, sections, relationships, doc counts
-cbase validate [target]                       # validate documents ('all', a model name, or a path ID)
-cbase export                                  # export collection as JSON
-cbase extract <glob> --sections "A, B"        # extract specific sections from matching documents
-cbase summary                                 # generate MODELS.md and TABLE-OF-CONTENTS.md
-cbase teach                                   # output combined documentation for LLM context
-cbase action <name>                           # run a named action
-cbase text-search <pattern>                   # search file contents with pattern matching
-cbase serve                                   # start HTTP server with REST API and doc serving
-cbase mcp                                     # start MCP server for AI agent integration
-cbase console                                 # interactive REPL with collection in scope
-cbase help                                    # list available commands
+cnotes init [name]                             # scaffold a new project
+cnotes create <Model> --title "..."            # scaffold a new document (uses templates if available)
+cnotes inspect                                 # show models, sections, relationships, doc counts
+cnotes validate [target]                       # validate documents ('all', a model name, or a path ID)
+cnotes export                                  # export collection as JSON
+cnotes extract <glob> --sections "A, B"        # extract specific sections from matching documents
+cnotes summary                                 # generate MODELS.md and TABLE-OF-CONTENTS.md
+cnotes teach                                   # output combined documentation for LLM context
+cnotes action <name>                           # run a named action
+cnotes text-search <pattern>                   # search file contents with pattern matching
+cnotes serve                                   # start HTTP server with REST API and doc serving
+cnotes mcp                                     # start MCP server for AI agent integration
+cnotes console                                 # interactive REPL with collection in scope
+cnotes help                                    # list available commands
 ```
 
 All commands accept `--contentFolder` to specify which folder contains your content. Defaults to `./docs`. You can also set it in `package.json`:
@@ -724,13 +724,13 @@ Start an HTTP server that exposes a full REST API for the collection. Documents 
 
 ```bash
 # Start on default port 8000
-cbase serve
+cnotes serve
 
 # Custom port, specific content folder
-cbase serve --port 9000 --contentFolder ./sdlc
+cnotes serve --port 9000 --contentFolder ./sdlc
 
 # Read-only mode: disables all write endpoints (POST/PUT/PATCH/DELETE)
-cbase serve --read-only
+cnotes serve --read-only
 ```
 
 **Built-in endpoints:**
@@ -759,8 +759,8 @@ You can also add your own endpoints by placing files in an `endpoints/` director
 Start a Model Context Protocol server for AI agent integration. Exposes tools, resources, and prompts for the collection.
 
 ```bash
-cbase mcp                                     # stdio transport (for Claude Desktop, etc.)
-cbase mcp --transport http --port 3003        # HTTP transport
+cnotes mcp                                     # stdio transport (for Claude Desktop, etc.)
+cnotes mcp --transport http --port 3003        # HTTP transport
 ```
 
 ### extract
@@ -769,13 +769,13 @@ The `extract` command outputs document titles, leading content, and only the req
 
 ```bash
 # Extract Acceptance Criteria from all stories
-cbase extract "stories/**/*" --sections "Acceptance Criteria"
+cnotes extract "stories/**/*" --sections "Acceptance Criteria"
 
 # Combine epics into a single document with a title
-cbase extract "epics/*" -s "Stories" --title "All Stories"
+cnotes extract "epics/*" -s "Stories" --title "All Stories"
 
 # Multiple sections, include frontmatter, raw heading depths
-cbase extract "epics/*" -s "Stories, Notes" --frontmatter --no-normalize-headings
+cnotes extract "epics/*" -s "Stories, Notes" --frontmatter --no-normalize-headings
 ```
 
 Glob patterns are matched against document path IDs using [picomatch](https://github.com/micromatch/picomatch). Sections that don't exist in a document are silently skipped.
@@ -787,8 +787,8 @@ By default, heading depths are normalized so each document's content nests prope
 The `create` command scaffolds new documents with smart defaults:
 
 ```bash
-cbase create Story --title "User can logout"
-cbase create Epic --title "Payments" --meta.priority high
+cnotes create Story --title "User can logout"
+cnotes create Epic --title "Payments" --meta.priority high
 ```
 
 If a template exists at `templates/<model>.md` (or `.mdx`) in your content directory, it's used as the base. Meta values are merged with this priority: Zod defaults < model defaults < template frontmatter < CLI `--meta.*` flags.

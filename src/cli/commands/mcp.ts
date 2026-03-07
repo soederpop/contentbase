@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import { existsSync, readdirSync } from 'node:fs'
 import matter from 'gray-matter'
 import { commands } from '../registry.js'
 import { loadCollection } from '../load-collection.js'
@@ -129,6 +130,9 @@ function generateReadMe(collection: any, modelDefs: any[]) {
     '| Find by criteria | `query` |',
     '| Full-text search | `search_content` |',
     '| File-level grep | `text_search` |',
+    '| Keyword search (BM25) | `keyword_search` |',
+    '| Semantic search (embeddings) | `semantic_search` |',
+    '| Hybrid search (keyword + semantic) | `hybrid_search` |',
     '| Create new document | `create_document` |',
     '| Edit a section | `update_section` |',
     '| Update frontmatter | `update_document` |',
@@ -309,9 +313,9 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   const collection = await loadCollection({ contentFolder, modulePath })
   const modelDefs = collection.modelDefinitions as any[]
 
-  console.error(`[cbase mcp] Loaded collection: ${collection.rootPath}`)
-  console.error(`[cbase mcp] Models: ${modelDefs.map((d: any) => d.name).join(', ') || '(none)'}`)
-  console.error(`[cbase mcp] Documents: ${collection.available.length}`)
+  console.error(`[cnotes mcp] Loaded collection: ${collection.rootPath}`)
+  console.error(`[cnotes mcp] Models: ${modelDefs.map((d: any) => d.name).join(', ') || '(none)'}`)
+  console.error(`[cnotes mcp] Documents: ${collection.available.length}`)
 
   const mcpServer = container.server('mcp', {
     transport: options.transport,
@@ -629,6 +633,111 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
       const files = Array.from(grouped.entries()).map(([file, matches]) => ({ file, matches }))
       return textResult(JSON.stringify({ files, count: files.length }, null, 2))
+    },
+  })
+
+  // =========================================================================
+  // SEMANTIC SEARCH TOOLS
+  // =========================================================================
+
+  let _semanticSearch: any = null
+
+  function hasSearchIndex(): boolean {
+    const dbDir = path.join(collection.rootPath, '.contentbase')
+    if (!existsSync(dbDir)) return false
+    try {
+      const files = readdirSync(dbDir) as string[]
+      return files.some((f: string) => f.startsWith('search.') && f.endsWith('.sqlite'))
+    } catch {
+      return false
+    }
+  }
+
+  async function getSemanticSearch() {
+    if (_semanticSearch?.state?.get('dbReady')) return _semanticSearch
+
+    const { SemanticSearch } = await import('@soederpop/luca/agi')
+    if (!container.features.available.includes('semanticSearch')) {
+      SemanticSearch.attach(container)
+    }
+
+    const dbPath = path.join(collection.rootPath, '.contentbase/search.sqlite')
+    _semanticSearch = container.feature('semanticSearch', { dbPath })
+    await _semanticSearch.initDb()
+    return _semanticSearch
+  }
+
+  mcpServer.tool('keyword_search', {
+    description: 'Fast keyword search using BM25 ranking. Best for exact terms, identifiers, and known phrases. Requires a search index — run `cnotes embed` first if not indexed.',
+    schema: z.object({
+      query: z.string().describe('Search query text'),
+      limit: z.number().optional().default(10).describe('Maximum results to return'),
+      model: z.string().optional().describe('Filter results to a specific model name'),
+    }),
+    handler: async (args) => {
+      if (!hasSearchIndex()) {
+        return errorResult('No search index found. Run: cnotes embed')
+      }
+      try {
+        const ss = await getSemanticSearch()
+        const results = await ss.search(args.query, {
+          limit: args.limit,
+          model: args.model,
+        })
+        return textResult(JSON.stringify(results, null, 2))
+      } catch (error: any) {
+        return errorResult(`Search failed: ${error.message}`)
+      }
+    },
+  })
+
+  mcpServer.tool('semantic_search', {
+    description: 'Search by meaning using vector embeddings. Finds conceptually related documents even without keyword matches. Requires a search index — run `cnotes embed` first if not indexed.',
+    schema: z.object({
+      query: z.string().describe('Search query text'),
+      limit: z.number().optional().default(10).describe('Maximum results to return'),
+      model: z.string().optional().describe('Filter results to a specific model name'),
+    }),
+    handler: async (args) => {
+      if (!hasSearchIndex()) {
+        return errorResult('No search index found. Run: cnotes embed')
+      }
+      try {
+        const ss = await getSemanticSearch()
+        const results = await ss.vectorSearch(args.query, {
+          limit: args.limit,
+          model: args.model,
+        })
+        return textResult(JSON.stringify(results, null, 2))
+      } catch (error: any) {
+        return errorResult(`Search failed: ${error.message}`)
+      }
+    },
+  })
+
+  mcpServer.tool('hybrid_search', {
+    description: 'Combined keyword + semantic search with score fusion. Best for general questions about the collection. Requires a search index — run `cnotes embed` first if not indexed.',
+    schema: z.object({
+      query: z.string().describe('Search query text'),
+      limit: z.number().optional().default(10).describe('Maximum results to return'),
+      model: z.string().optional().describe('Filter results to a specific model name'),
+      where: z.record(z.string(), z.any()).optional().describe('Metadata filters, e.g. {"status": "approved"}'),
+    }),
+    handler: async (args) => {
+      if (!hasSearchIndex()) {
+        return errorResult('No search index found. Run: cnotes embed')
+      }
+      try {
+        const ss = await getSemanticSearch()
+        const results = await ss.hybridSearch(args.query, {
+          limit: args.limit,
+          model: args.model,
+          where: args.where,
+        })
+        return textResult(JSON.stringify(results, null, 2))
+      } catch (error: any) {
+        return errorResult(`Search failed: ${error.message}`)
+      }
     },
   })
 
@@ -1009,9 +1118,9 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     console.log(`Transport: HTTP (Streamable)`)
     console.log(`Compatibility: ${resolvedCompat}`)
   } else {
-    console.error(`[cbase mcp] Server started (stdio transport)`)
-    console.error(`[cbase mcp] Stdio compatibility: ${resolvedStdioCompat}`)
-    console.error(`[cbase mcp] Tools: ${mcpServer._tools.size} | Resources: ${mcpServer._resources.size} | Prompts: ${mcpServer._prompts.size}`)
+    console.error(`[cnotes mcp] Server started (stdio transport)`)
+    console.error(`[cnotes mcp] Stdio compatibility: ${resolvedStdioCompat}`)
+    console.error(`[cnotes mcp] Tools: ${mcpServer._tools.size} | Resources: ${mcpServer._resources.size} | Prompts: ${mcpServer._prompts.size}`)
   }
 
   // ---------------------------------------------------------------------------
@@ -1041,20 +1150,20 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
         refreshCollection()
       }
     })
-    console.error(`[cbase mcp] Watching for file changes in ${collection.rootPath}`)
+    console.error(`[cnotes mcp] Watching for file changes in ${collection.rootPath}`)
   }
 }
 
 commands.register('mcp', {
   description: 'Start an MCP server for AI agents to query and manage structured markdown content',
-  help: `# cbase mcp
+  help: `# cnotes mcp
 
 Start an MCP (Model Context Protocol) server that exposes collection tools, resources, and prompts for AI agents. Supports both stdio and HTTP transports.
 
 ## Usage
 
 \`\`\`
-cbase mcp [contentFolder] [options]
+cnotes mcp [contentFolder] [options]
 \`\`\`
 
 ## Arguments
@@ -1077,7 +1186,7 @@ cbase mcp [contentFolder] [options]
 
 ## Exposed Capabilities
 
-**Tools:** read_me, inspect, get_model_info, list_documents, query, search_content, text_search, validate, create_document, update_document, update_section, delete_document, run_action
+**Tools:** read_me, inspect, get_model_info, list_documents, query, search_content, text_search, keyword_search, semantic_search, hybrid_search, validate, create_document, update_document, update_section, delete_document, run_action
 
 **Resources:** schema, table of contents, models summary, primer, per-document resources
 
@@ -1087,22 +1196,22 @@ cbase mcp [contentFolder] [options]
 
 \`\`\`bash
 # Start with stdio (for Claude Desktop, Cursor, etc.)
-cbase mcp
+cnotes mcp
 
 # Start with HTTP transport
-cbase mcp --transport http --port 3003
+cnotes mcp --transport http --port 3003
 
 # Start with Codex HTTP compatibility mode
-cbase mcp --transport http --port 3003 --mcpCompat codex
+cnotes mcp --transport http --port 3003 --mcpCompat codex
 
 # Start with Codex stdio framing mode
-cbase mcp --stdioCompat codex
+cnotes mcp --stdioCompat codex
 
 # Serve a specific content folder
-cbase mcp ./docs
+cnotes mcp ./docs
 
 # Use in claude_desktop_config.json
-# { "command": "cbase", "args": ["mcp", "./docs"] }
+# { "command": "cnotes", "args": ["mcp", "./docs"] }
 \`\`\`
 `,
   argsSchema,

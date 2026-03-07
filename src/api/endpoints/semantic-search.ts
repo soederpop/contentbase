@@ -2,8 +2,8 @@ import { z } from 'zod'
 import pathModule from 'node:path'
 import { existsSync, readdirSync } from 'node:fs'
 
-export const path = '/api/search'
-export const description = 'Search across collection documents using keyword, semantic, or hybrid modes'
+export const path = '/api/semantic-search'
+export const description = 'Semantic search across collection documents'
 export const tags = ['query']
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -35,19 +35,7 @@ async function getSemanticSearch(container: any, rootPath: string) {
   return _semanticSearch
 }
 
-async function doSearch(ss: any, query: string, mode: string, options: any) {
-  switch (mode) {
-    case 'keyword':
-      return ss.search(query, options)
-    case 'vector':
-      return ss.vectorSearch(query, options)
-    case 'hybrid':
-    default:
-      return ss.hybridSearch(query, options)
-  }
-}
-
-// ── GET /api/search ──────────────────────────────────────────────────
+// ── GET /api/semantic-search ─────────────────────────────────────────
 
 export const getSchema = z.object({
   q: z.string(),
@@ -70,10 +58,24 @@ export async function get(params: any, ctx: any) {
   const limit = params.limit ? parseInt(params.limit, 10) : 10
   const searchOptions = { limit, model: params.model }
 
-  return doSearch(ss, params.q, mode, searchOptions)
+  let results: any[]
+  switch (mode) {
+    case 'keyword':
+      results = await ss.search(params.q, searchOptions)
+      break
+    case 'vector':
+      results = await ss.vectorSearch(params.q, searchOptions)
+      break
+    case 'hybrid':
+    default:
+      results = await ss.hybridSearch(params.q, searchOptions)
+      break
+  }
+
+  return results
 }
 
-// ── POST /api/search ─────────────────────────────────────────────────
+// ── POST /api/semantic-search ────────────────────────────────────────
 
 export const postSchema = z.object({
   query: z.string(),
@@ -100,5 +102,19 @@ export async function post(params: any, ctx: any) {
     where: params.where,
   }
 
-  return doSearch(ss, params.query, mode, searchOptions)
+  let results: any[]
+  switch (mode) {
+    case 'keyword':
+      results = await ss.search(params.query, searchOptions)
+      break
+    case 'vector':
+      results = await ss.vectorSearch(params.query, searchOptions)
+      break
+    case 'hybrid':
+    default:
+      results = await ss.hybridSearch(params.query, searchOptions)
+      break
+  }
+
+  return results
 }

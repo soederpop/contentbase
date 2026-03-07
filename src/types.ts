@@ -48,7 +48,10 @@ export interface HasManyDefinition<
 > {
   type: "hasMany";
   target: () => TTarget;
-  heading: string;
+  /** Extract children from sub-headings under this heading in the parent document */
+  heading?: string;
+  /** Find children by querying for target documents where meta[foreignKey] matches this document's slug */
+  foreignKey?: string;
   meta?: (self: any) => Record<string, unknown>;
   id?: (slug: string) => string;
 }

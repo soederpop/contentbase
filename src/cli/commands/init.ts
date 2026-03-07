@@ -60,14 +60,14 @@ collection.register(Post);
 
 commands.register('init', {
   description: 'Initialize a new contentbase project',
-  help: `# cbase init
+  help: `# cnotes init
 
 Scaffold a new contentbase project with a sample model and document.
 
 ## Usage
 
 \`\`\`
-cbase init [name]
+cnotes init [name]
 \`\`\`
 
 ## Arguments
@@ -86,13 +86,13 @@ cbase init [name]
 
 \`\`\`bash
 # Create with default name
-cbase init
+cnotes init
 
 # Create with custom name
-cbase init docs
+cnotes init docs
 
 # Create in a subdirectory
-cbase init content/blog
+cnotes init content/blog
 \`\`\`
 `,
   handler,

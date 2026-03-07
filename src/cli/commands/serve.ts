@@ -18,6 +18,7 @@ const argsSchema = z.object({
   readOnly: z.boolean().default(false),
   refreshInterval: z.number().optional(),
   watch: z.boolean().default(true),
+  search: z.boolean().default(false),
 })
 
 async function handler(options: z.infer<typeof argsSchema>, context: { container: any }) {
@@ -180,6 +181,59 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   }
 
   // ---------------------------------------------------------------------------
+  // Search index auto-update
+  // ---------------------------------------------------------------------------
+  if (options.search) {
+    const { existsSync, readdirSync } = await import('node:fs')
+    const dbDir = path.join(collection.rootPath, '.contentbase')
+    const hasIndex = existsSync(dbDir) && (() => {
+      try {
+        return (readdirSync(dbDir) as string[]).some((f: string) => f.startsWith('search.') && f.endsWith('.sqlite'))
+      } catch { return false }
+    })()
+
+    if (hasIndex) {
+      try {
+        const { SemanticSearch } = await import('@soederpop/luca/agi')
+        if (!container.features.available.includes('semanticSearch')) {
+          SemanticSearch.attach(container)
+        }
+        const dbPath = path.join(collection.rootPath, '.contentbase/search.sqlite')
+        const ss = container.feature('semanticSearch', { dbPath }) as any
+        await ss.initDb()
+
+        // Collect document inputs
+        const docs: any[] = []
+        for (const pathId of collection.available) {
+          const doc = collection.document(pathId) as any
+          docs.push({
+            pathId,
+            model: collection.findModelDefinition(pathId)?.name ?? undefined,
+            title: doc.title,
+            meta: doc.meta,
+            content: doc.content,
+          })
+        }
+
+        const stale = docs.filter((d: any) => ss.needsReindex(d))
+        ss.removeStale(docs.map((d: any) => d.pathId))
+
+        if (stale.length > 0) {
+          console.log(`[search] Updating ${stale.length} stale document(s)...`)
+          await ss.indexDocuments(stale)
+          console.log(`[search] Index updated.`)
+        } else {
+          console.log(`[search] Index is up to date.`)
+        }
+      } catch (error) {
+        console.warn(`[search] Auto-index failed: ${(error as Error).message}`)
+      }
+    } else {
+      console.log(`[search] No search index found. Run: cnotes embed`)
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // File watching
   // ---------------------------------------------------------------------------
   if (options.watch !== false) {
@@ -233,14 +287,14 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('serve', {
   description: 'Start an HTTP server for the collection with REST API and document serving',
-  help: `# cbase serve
+  help: `# cnotes serve
 
 Start an HTTP server with REST API endpoints for querying, creating, updating, and deleting documents. Serves static files and auto-generates an OpenAPI spec.
 
 ## Usage
 
 \`\`\`
-cbase serve [contentFolder] [options]
+cnotes serve [contentFolder] [options]
 \`\`\`
 
 ## Arguments
@@ -274,19 +328,19 @@ Place endpoint modules in \`endpoints/\` or \`src/endpoints/\` and they'll be au
 
 \`\`\`bash
 # Start on default port
-cbase serve
+cnotes serve
 
 # Serve a specific folder on a custom port
-cbase serve ./docs --port 3000
+cnotes serve ./docs --port 3000
 
 # Force kill existing server and open browser
-cbase serve --port 8000 --force --open
+cnotes serve --port 8000 --force --open
 
 # Read-only mode for production
-cbase serve --readOnly --port 8080
+cnotes serve --readOnly --port 8080
 
 # Find any available port
-cbase serve --anyPort
+cnotes serve --anyPort
 \`\`\`
 `,
   argsSchema,

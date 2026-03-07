@@ -4,14 +4,14 @@ async function handler(_options: any, context: { container: any }) {
   const ui = context.container.feature('ui')
 
   const lines: string[] = [
-    '# cbase',
+    '# cnotes',
     '',
     'An ORM for structured Markdown/MDX files.',
     '',
     '## Usage',
     '',
     '```',
-    'cbase <command> [options]',
+    'cnotes <command> [options]',
     '```',
     '',
     '## Commands',
@@ -38,11 +38,11 @@ async function handler(_options: any, context: { container: any }) {
     '',
     '```bash',
     '# Show this overview',
-    'cbase help',
+    'cnotes help',
     '',
     '# Show detailed help for a command',
-    'cbase help serve',
-    'cbase serve --help',
+    'cnotes help serve',
+    'cnotes serve --help',
     '```',
   )
 
@@ -51,14 +51,14 @@ async function handler(_options: any, context: { container: any }) {
 
 commands.register('help', {
   description: 'Show available commands',
-  help: `# cbase help
+  help: `# cnotes help
 
 Show available commands and usage information.
 
 ## Usage
 
 \`\`\`
-cbase help [command]
+cnotes help [command]
 \`\`\`
 
 ## Arguments
@@ -71,10 +71,10 @@ cbase help [command]
 
 \`\`\`bash
 # Show all commands
-cbase help
+cnotes help
 
 # Show help for the serve command
-cbase help serve
+cnotes help serve
 \`\`\`
 `,
   handler,

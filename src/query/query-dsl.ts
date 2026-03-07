@@ -77,6 +77,7 @@ export const queryDSLSchema = z.object({
   where: z.record(z.string(), whereValueSchema).optional(),
   sort: sortSchema.optional(),
   select: z.array(z.string()).optional(),
+  related: z.array(z.string()).optional(),
   scopes: z.array(z.string()).optional(),
   limit: z.number().int().min(0).optional(),
   offset: z.number().int().min(0).optional(),
@@ -170,8 +171,9 @@ export function parseSortClause(
 function applySelect(
   instance: any,
   select?: string[],
+  related?: string[],
 ): Record<string, unknown> {
-  const json = instance.toJSON();
+  const json = instance.toJSON({ related });
   if (!select || select.length === 0) return json;
 
   const filtered: Record<string, unknown> = {};
@@ -238,19 +240,19 @@ export async function executeQueryDSL(
 
     case "first": {
       const result = await q.first();
-      return result ? applySelect(result, dsl.select) : null;
+      return result ? applySelect(result, dsl.select, dsl.related) : null;
     }
 
     case "last": {
       const result = await q.last();
-      return result ? applySelect(result, dsl.select) : null;
+      return result ? applySelect(result, dsl.select, dsl.related) : null;
     }
 
     case "fetchAll":
     default: {
       const results = await q.fetchAll();
       return results.map((instance: any) =>
-        applySelect(instance, dsl.select),
+        applySelect(instance, dsl.select, dsl.related),
       );
     }
   }

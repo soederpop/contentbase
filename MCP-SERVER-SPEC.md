@@ -17,7 +17,7 @@ Resources expose collection data as readable URIs. MCP supports both static reso
 | `contentbase://schema` | All registered models with their meta fields, sections, relationships, computed properties, and defaults | `collection.modelDefinitions` + `introspectMetaSchema()` |
 | `contentbase://toc` | Table of contents listing all documents grouped by model | `collection.tableOfContents()` |
 | `contentbase://models-summary` | Full MODELS.md documentation | `collection.generateModelSummary()` |
-| `contentbase://primer` | The teach output — full LLM context document | Same as `cbase teach` |
+| `contentbase://primer` | The teach output — full LLM context document | Same as `cnotes teach` |
 
 The `schema` resource is the most important one. It's what an LLM reads first to understand what models exist, what fields they have, and how to query them. Structure it as JSON:
 
@@ -209,7 +209,7 @@ Maps to `validateDocument(doc, definition)` for individual docs, or iterates all
 }
 ```
 
-Mirrors what `cbase create` does: applies Zod defaults, merges with definition defaults, checks for templates, scaffolds section headings, writes via `collection.saveItem()`. Returns the new pathId and full document.
+Mirrors what `cnotes create` does: applies Zod defaults, merges with definition defaults, checks for templates, scaffolds section headings, writes via `collection.saveItem()`. Returns the new pathId and full document.
 
 **`update_document`** — Modify an existing document's frontmatter or content.
 
@@ -299,7 +299,7 @@ Maps directly to `collection.runAction(name, ...args)`.
 }
 ```
 
-Returns the same structured info as `cbase inspect` but as JSON. Useful as a first-call tool for an LLM to orient itself.
+Returns the same structured info as `cnotes inspect` but as JSON. Useful as a first-call tool for an LLM to orient itself.
 
 **`list_documents`** — List all document IDs, optionally filtered by model.
 
@@ -401,7 +401,7 @@ Please suggest fixes for validation errors and check that all sections are compl
 }
 ```
 
-Returns the same output as `cbase teach` — MODELS.md + TOC + CLI.md + PRIMER.md. This is the "onboarding" prompt: paste it in and the LLM understands your entire content structure.
+Returns the same output as `cnotes teach` — MODELS.md + TOC + CLI.md + PRIMER.md. This is the "onboarding" prompt: paste it in and the LLM understands your entire content structure.
 
 ### `query-guide`
 

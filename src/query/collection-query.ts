@@ -2,7 +2,7 @@ import { QueryBuilder } from "./query-builder";
 import { operators } from "./operators";
 import { createModelInstance } from "../model-instance";
 import type { Collection } from "../collection";
-import type { ModelDefinition, InferModelInstance } from "../types";
+import type { ModelDefinition, InferModelInstance, SerializeOptions } from "../types";
 
 /**
  * CollectionQuery is a typed query builder for a specific model type.
@@ -12,6 +12,7 @@ import type { ModelDefinition, InferModelInstance } from "../types";
  *   const results = await collection
  *     .query(Epic)
  *     .where("meta.priority", "high")
+ *     .include("plans")
  *     .fetchAll();
  */
 interface SortSpec {
@@ -28,11 +29,32 @@ export class CollectionQuery<
   #sorts: SortSpec[] = [];
   #limit: number | undefined;
   #offset: number | undefined;
+  #include: string[] = [];
 
   constructor(collection: Collection, definition: TDef) {
     this.#collection = collection;
     this.#definition = definition;
     this.#queryBuilder = new QueryBuilder();
+  }
+
+  /**
+   * Include related models in query results.
+   * Named relationships will be eagerly resolved and included in toJSON() output.
+   *
+   * @example
+   *   await collection.query(Project).include("plans").fetchAll()
+   *   await collection.query(Project).include("plans", "goal").fetchAll()
+   */
+  include(...names: string[]): this {
+    this.#include.push(...names);
+    return this;
+  }
+
+  /** Returns the serialize options based on include() calls */
+  get serializeOptions(): SerializeOptions {
+    const opts: SerializeOptions = {};
+    if (this.#include.length > 0) opts.related = this.#include;
+    return opts;
   }
 
   where(
@@ -175,6 +197,21 @@ export class CollectionQuery<
     }
     if (this.#limit !== undefined && this.#limit >= 0) {
       results = results.slice(0, this.#limit);
+    }
+
+    // Bind serialize options from include() so toJSON() includes relationships
+    if (this.#include.length > 0) {
+      const opts = this.serializeOptions;
+      for (const instance of results) {
+        const original = (instance as any).toJSON;
+        (instance as any).toJSON = (overrides?: SerializeOptions) => {
+          const merged = { ...opts, ...overrides };
+          if (opts.related && overrides?.related) {
+            merged.related = [...new Set([...opts.related, ...overrides.related])];
+          }
+          return original(merged);
+        };
+      }
     }
 
     return results;

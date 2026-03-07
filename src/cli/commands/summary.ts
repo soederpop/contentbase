@@ -14,7 +14,7 @@ async function handler(options: z.infer<typeof argsSchema>) {
   })
 
   await collection.saveModelSummary()
-  console.log(`MODELS.md written to ${collection.rootPath}/MODELS.md`)
+  console.log(`README.md written to ${collection.rootPath}/README.md`)
 
   const toc = collection.tableOfContents({ title: 'Table of Contents' })
   const tocPath = join(collection.rootPath, 'TABLE-OF-CONTENTS.md')
@@ -23,15 +23,15 @@ async function handler(options: z.infer<typeof argsSchema>) {
 }
 
 commands.register('summary', {
-  description: 'Generate MODELS.md and TABLE-OF-CONTENTS.md for the collection',
-  help: `# cbase summary
+  description: 'Generate README.md and TABLE-OF-CONTENTS.md for the collection',
+  help: `# cnotes summary
 
-Generate documentation files for the collection. Writes \`MODELS.md\` (model definitions summary) and \`TABLE-OF-CONTENTS.md\` (document listing) to the content root.
+Generate documentation files for the collection. Writes \`README.md\` (model definitions summary) and \`TABLE-OF-CONTENTS.md\` (document listing) to the content root.
 
 ## Usage
 
 \`\`\`
-cbase summary [options]
+cnotes summary [options]
 \`\`\`
 
 ## Options
@@ -42,17 +42,17 @@ cbase summary [options]
 
 ## Generated Files
 
-- **MODELS.md** — Overview of all registered models with fields, sections, and relationships
+- **README.md** — Overview of all registered models with fields, sections, and relationships
 - **TABLE-OF-CONTENTS.md** — Listing of all documents organized by model
 
 ## Examples
 
 \`\`\`bash
 # Generate summary files
-cbase summary
+cnotes summary
 
 # Generate for a specific content folder
-cbase summary --contentFolder ./docs
+cnotes summary --contentFolder ./docs
 \`\`\`
 `,
   argsSchema,

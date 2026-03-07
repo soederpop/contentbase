@@ -16,14 +16,14 @@ async function handler(options: z.infer<typeof argsSchema>) {
 
 commands.register('inspect', {
   description: 'Display collection info and registered models',
-  help: `# cbase inspect
+  help: `# cnotes inspect
 
 Display a summary of the collection: registered models, their fields, sections, relationships, and document counts.
 
 ## Usage
 
 \`\`\`
-cbase inspect [options]
+cnotes inspect [options]
 \`\`\`
 
 ## Options
@@ -45,10 +45,10 @@ Shows for each model:
 
 \`\`\`bash
 # Inspect current directory's collection
-cbase inspect
+cnotes inspect
 
 # Inspect a specific content folder
-cbase inspect --contentFolder test/fixtures/sdlc
+cnotes inspect --contentFolder test/fixtures/sdlc
 \`\`\`
 `,
   argsSchema,

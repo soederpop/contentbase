@@ -51,6 +51,7 @@ export class HasManyRelationship<
    */
   private extractChildNodes(): ChildNode[] {
     const { astQuery } = this.#document;
+    if (!this.#definition.heading) return [];
     const parentHeading = astQuery.findHeadingByText(this.#definition.heading);
     if (!parentHeading) return [];
 
@@ -100,6 +101,14 @@ export class HasManyRelationship<
 
   fetchAll(): InferModelInstance<TTarget>[] {
     const targetDef = this.#definition.target();
+
+    // Foreign key mode: query for target documents where meta[foreignKey] matches this document's slug
+    // Used when foreignKey is explicitly set, or when no heading is specified (convention-based)
+    if (this.#definition.foreignKey || !this.#definition.heading) {
+      return this.#fetchByForeignKey(targetDef);
+    }
+
+    // Heading mode: extract child nodes from parent document AST
     const childNodes = this.extractChildNodes();
 
     return childNodes.map(({ id, ast }) => {
@@ -117,6 +126,36 @@ export class HasManyRelationship<
       });
       return this.#factory(doc, targetDef, this.#collection);
     });
+  }
+
+  #fetchByForeignKey(targetDef: TTarget): InferModelInstance<TTarget>[] {
+    // If foreignKey is explicitly set, use it. Otherwise infer from the parent document's model.
+    // Convention: look for meta[lowercase(parentModelName)] on target documents.
+    // e.g. Project hasMany Plans → looks for meta.project on Plan documents.
+    const fk = this.#definition.foreignKey || this.#inferForeignKey();
+    const slug = this.#document.slug;
+    const prefix = targetDef.prefix;
+    const results: InferModelInstance<TTarget>[] = [];
+
+    for (const pathId of this.#collection.available) {
+      if (!pathId.startsWith(prefix + "/")) continue;
+      const doc = this.#collection.document(pathId);
+      if (doc.meta[fk] === slug) {
+        results.push(this.#factory(doc, targetDef, this.#collection));
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Infer the foreign key name from the parent document's prefix.
+   * e.g. if the parent is in "projects/", the FK is "project" (singularized, lowercased).
+   */
+  #inferForeignKey(): string {
+    const parentPrefix = this.#document.id.split("/")[0];
+    // Simple singularize: strip trailing "s"
+    return parentPrefix.replace(/s$/, "");
   }
 
   first(): InferModelInstance<TTarget> | undefined {

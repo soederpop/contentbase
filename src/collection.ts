@@ -709,7 +709,7 @@ export class Collection {
 
   /**
    * Generate a plain-text summary of the collection and its models.
-   * Returns the same output as `cbase inspect`.
+   * Returns the same output as `cnotes inspect`.
    */
   generateModelSummary(): string {
     if (!this.#loaded) {

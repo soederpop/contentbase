@@ -333,7 +333,7 @@ collection.loaded  // boolean
 collection.tableOfContents({ title: "SDLC Docs" })
 
 // Get a summary of all models
-await collection.generateModelSummary()  // writes MODELS.md and returns markdown
+await collection.generateModelSummary()  // writes README.md and returns markdown
 
 // Export everything as JSON
 await collection.export()

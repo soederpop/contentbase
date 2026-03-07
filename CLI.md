@@ -1,6 +1,6 @@
 # Contentbase CLI Reference
 
-The `cbase` CLI provides commands for managing, querying, serving, and documenting your contentbase collections from the terminal.
+The `cnotes` CLI provides commands for managing, querying, serving, and documenting your contentbase collections from the terminal.
 
 All commands run via the `luca` container runtime, which means you get full access to features like networking, process management, file system utilities, and more — without installing extra dependencies.
 
@@ -32,31 +32,31 @@ The CLI automatically discovers your project setup:
 
 | Command | Purpose |
 |---------|---------|
-| `cbase init` | Scaffold a new contentbase project |
-| `cbase create` | Create a new document from a model template |
-| `cbase inspect` | Display collection metadata and model info |
-| `cbase validate` | Validate documents against model schemas |
-| `cbase export` | Export the entire collection as JSON |
-| `cbase extract` | Pull specific sections from documents into a combined output |
-| `cbase summary` | Generate MODELS.md and TABLE-OF-CONTENTS.md |
-| `cbase teach` | Output combined docs for LLM context |
-| `cbase action` | Run a named collection action |
-| `cbase serve` | Start an HTTP server with REST API and doc serving |
-| `cbase mcp` | Start an MCP server for AI agent integration |
-| `cbase console` | Interactive REPL with collection in scope |
-| `cbase help` | List available commands |
+| `cnotes init` | Scaffold a new contentbase project |
+| `cnotes create` | Create a new document from a model template |
+| `cnotes inspect` | Display collection metadata and model info |
+| `cnotes validate` | Validate documents against model schemas |
+| `cnotes export` | Export the entire collection as JSON |
+| `cnotes extract` | Pull specific sections from documents into a combined output |
+| `cnotes summary` | Generate MODELS.md and TABLE-OF-CONTENTS.md |
+| `cnotes teach` | Output combined docs for LLM context |
+| `cnotes action` | Run a named collection action |
+| `cnotes serve` | Start an HTTP server with REST API and doc serving |
+| `cnotes mcp` | Start an MCP server for AI agent integration |
+| `cnotes console` | Interactive REPL with collection in scope |
+| `cnotes help` | List available commands |
 
 ---
 
 ## Project Scaffolding
 
-### `cbase init [name]`
+### `cnotes init [name]`
 
 Scaffold a new contentbase project with sample models and documents.
 
 ```bash
-cbase init
-cbase init blog-content
+cnotes init
+cnotes init blog-content
 ```
 
 Creates:
@@ -70,7 +70,7 @@ This gives you a Tier 1 project (the recommended setup) right away.
 
 ## Content Management
 
-### `cbase create <model> --title "<title>"`
+### `cnotes create <model> --title "<title>"`
 
 Create a new document scaffolded from a model definition.
 
@@ -84,28 +84,28 @@ Create a new document scaffolded from a model definition.
 
 ```bash
 # Create a story with defaults
-cbase create story --title "User Login Flow"
+cnotes create story --title "User Login Flow"
 
 # Create an epic with meta overrides
-cbase create epic --title "Authentication" --meta.status active --meta.priority high
+cnotes create epic --title "Authentication" --meta.status active --meta.priority high
 
 # Use a different content folder
-cbase create story --title "Search Results" --contentFolder ./sdlc
+cnotes create story --title "Search Results" --contentFolder ./sdlc
 ```
 
-The file is written to `{prefix}/{kebab-title}.mdx`. So `cbase create story --title "User Login Flow"` creates `stories/user-login-flow.mdx`.
+The file is written to `{prefix}/{kebab-title}.mdx`. So `cnotes create story --title "User Login Flow"` creates `stories/user-login-flow.mdx`.
 
 ---
 
 ## Querying and Inspection
 
-### `cbase inspect`
+### `cnotes inspect`
 
 Display a summary of the collection: registered models, their schemas, sections, relationships, and document counts.
 
 ```bash
-cbase inspect
-cbase inspect --contentFolder ./sdlc
+cnotes inspect
+cnotes inspect --contentFolder ./sdlc
 ```
 
 **Example output:**
@@ -127,17 +127,17 @@ Items: 15
     Documents: 12
 ```
 
-### `cbase export`
+### `cnotes export`
 
 Export the entire collection as JSON to stdout.
 
 ```bash
-cbase export
-cbase export > collection.json
-cbase export | jq '.models'
+cnotes export
+cnotes export > collection.json
+cnotes export | jq '.models'
 ```
 
-### `cbase extract <glob> --sections "A, B"`
+### `cnotes extract <glob> --sections "A, B"`
 
 Extract specific sections from matching documents and combine them into a single output. Useful for pulling all acceptance criteria, all requirements, or other structured sections across your collection.
 
@@ -152,13 +152,13 @@ Extract specific sections from matching documents and combine them into a single
 
 ```bash
 # Extract acceptance criteria from all stories
-cbase extract "stories/**/*" --sections "Acceptance Criteria"
+cnotes extract "stories/**/*" --sections "Acceptance Criteria"
 
 # Combine epics with a title
-cbase extract "epics/*" -s "Stories" --title "All Stories"
+cnotes extract "epics/*" -s "Stories" --title "All Stories"
 
 # Multiple sections, include frontmatter
-cbase extract "epics/*" -s "Stories, Notes" --frontmatter --no-normalize-headings
+cnotes extract "epics/*" -s "Stories, Notes" --frontmatter --no-normalize-headings
 ```
 
 Sections that don't exist in a document are silently skipped. By default, heading depths are normalized so the combined output nests properly.
@@ -167,7 +167,7 @@ Sections that don't exist in a document are silently skipped. By default, headin
 
 ## Validation
 
-### `cbase validate [target]`
+### `cnotes validate [target]`
 
 Validate documents against their model Zod schemas. Checks frontmatter fields and section schemas.
 
@@ -181,10 +181,10 @@ Validate documents against their model Zod schemas. Checks frontmatter fields an
 - `--setDefaultMeta` — Write missing default frontmatter values to documents that are missing them
 
 ```bash
-cbase validate
-cbase validate stories/user-login-flow
-cbase validate Story
-cbase validate all --setDefaultMeta
+cnotes validate
+cnotes validate stories/user-login-flow
+cnotes validate Story
+cnotes validate all --setDefaultMeta
 ```
 
 Exits with code 1 if any documents are invalid.
@@ -201,7 +201,7 @@ Validated 12 documents: 11 valid, 1 invalid
 
 ## Documentation Generation
 
-### `cbase summary`
+### `cnotes summary`
 
 Generate documentation files in your content directory:
 
@@ -209,30 +209,30 @@ Generate documentation files in your content directory:
 - **TABLE-OF-CONTENTS.md** — A linked listing of all documents grouped by model
 
 ```bash
-cbase summary
+cnotes summary
 ```
 
-### `cbase teach`
+### `cnotes teach`
 
 Output a combined document for LLM context. Concatenates MODELS.md, TABLE-OF-CONTENTS.md, CLI.md, and PRIMER.md into a single output designed to teach an AI about your content structure.
 
 ```bash
-cbase teach
-cbase teach | pbcopy          # copy to clipboard (macOS)
-cbase teach > CONTEXT.md      # save to file
+cnotes teach
+cnotes teach | pbcopy          # copy to clipboard (macOS)
+cnotes teach > CONTEXT.md      # save to file
 ```
 
 ---
 
 ## Collection Actions
 
-### `cbase action <name>`
+### `cnotes action <name>`
 
 Run a named action registered on the collection.
 
 ```bash
-cbase action rebuild-index
-cbase action generate-report
+cnotes action rebuild-index
+cnotes action generate-report
 ```
 
 Actions are defined in your collection setup:
@@ -247,7 +247,7 @@ collection.action("rebuild-index", async (coll) => {
 
 ## Search
 
-### `cbase text-search <pattern>`
+### `cnotes text-search <pattern>`
 
 Search file contents within the content folder using pattern matching. Powered by ripgrep (with grep fallback).
 
@@ -266,13 +266,13 @@ Search file contents within the content folder using pattern matching. Powered b
 
 ```bash
 # Find files containing "TODO"
-cbase text-search "TODO"
+cnotes text-search "TODO"
 
 # Show line-level detail
-cbase text-search "TODO" --expanded
+cnotes text-search "TODO" --expanded
 
 # Filter to markdown, case insensitive
-cbase text-search "deploy" --include "*.md" --ignoreCase
+cnotes text-search "deploy" --include "*.md" --ignoreCase
 ```
 
 **Example output (default):**
@@ -304,7 +304,7 @@ cbase text-search "deploy" --include "*.md" --ignoreCase
 
 ## Servers
 
-### `cbase serve`
+### `cnotes serve`
 
 Start an HTTP server that exposes the collection via a REST API with content-negotiated document serving.
 
@@ -323,16 +323,16 @@ Start an HTTP server that exposes the collection via a REST API with content-neg
 
 ```bash
 # Start with defaults
-cbase serve
+cnotes serve
 
 # Custom port and content folder
-cbase serve --port 9000 --contentFolder ./sdlc
+cnotes serve --port 9000 --contentFolder ./sdlc
 
 # Force-claim the port
-cbase serve --force
+cnotes serve --force
 
 # Find any open port
-cbase serve --anyPort
+cnotes serve --anyPort
 ```
 
 #### Built-in API Endpoints
@@ -396,7 +396,7 @@ All endpoints return JSON unless otherwise noted.
 
 ```bash
 # Start the server
-cbase serve --port 8000 --contentFolder .
+cnotes serve --port 8000 --contentFolder .
 
 # List all documents
 curl localhost:8000/api/documents
@@ -464,7 +464,7 @@ User endpoints are loaded after built-in endpoints, so you can add custom routes
 
 ---
 
-### `cbase mcp`
+### `cnotes mcp`
 
 Start a Model Context Protocol server that exposes the collection to AI agents. Provides tools for querying, creating, updating, and deleting documents, plus resources for schema introspection and prompts for guided workflows.
 
@@ -478,13 +478,13 @@ Start a Model Context Protocol server that exposes the collection to AI agents. 
 
 ```bash
 # Start with stdio (for Claude Desktop, etc.)
-cbase mcp
+cnotes mcp
 
 # Start with HTTP transport
-cbase mcp --transport http --port 3003
+cnotes mcp --transport http --port 3003
 
 # Use a specific content folder
-cbase mcp --contentFolder ./sdlc
+cnotes mcp --contentFolder ./sdlc
 ```
 
 **MCP Tools provided:** `inspect`, `list_documents`, `query`, `search_content`, `text_search`, `validate`, `create_document`, `update_document`, `update_section`, `delete_document`, `run_action`
@@ -497,13 +497,13 @@ cbase mcp --contentFolder ./sdlc
 
 ## Interactive
 
-### `cbase console`
+### `cnotes console`
 
 Start an interactive REPL with the collection and container features in scope.
 
 ```bash
-cbase console
-cbase console --contentFolder ./sdlc
+cnotes console
+cnotes console --contentFolder ./sdlc
 ```
 
 The REPL provides:
@@ -511,21 +511,21 @@ The REPL provides:
 - All container features (fs, git, proc, etc.) as top-level variables
 - Full async/await support
 
-Optionally, create a `cbase.console.ts` file in your project root to customize the REPL context:
+Optionally, create a `cnotes.console.ts` file in your project root to customize the REPL context:
 
 ```ts
-// cbase.console.ts
+// cnotes.console.ts
 export default function setup(context: Record<string, any>) {
   context.epics = () => context.collection.query(Epic).fetchAll()
 }
 ```
 
-### `cbase help`
+### `cnotes help`
 
 List all available commands with their descriptions.
 
 ```bash
-cbase help
+cnotes help
 ```
 
 ---
@@ -535,28 +535,28 @@ cbase help
 ### Setting up a new project
 
 ```bash
-cbase init my-docs
+cnotes init my-docs
 cd my-docs
 # Edit models.ts to define your schemas
 # Add markdown files to your prefix folders
-cbase validate
+cnotes validate
 ```
 
 ### Creating and validating content
 
 ```bash
-cbase create epic --title "User Authentication"
+cnotes create epic --title "User Authentication"
 # Edit the generated file in your editor...
-cbase validate epics/user-authentication
-cbase validate Epic
-cbase validate
+cnotes validate epics/user-authentication
+cnotes validate Epic
+cnotes validate
 ```
 
 ### Running a local content API
 
 ```bash
 # Start the server
-cbase serve
+cnotes serve
 
 # In another terminal — browse your collection
 curl localhost:8000/api/inspect
@@ -570,14 +570,14 @@ curl "localhost:8000/api/query?model=Epic&where=[{\"path\":\"meta.priority\",\"v
 ### Generating documentation
 
 ```bash
-cbase summary
-cbase teach > CONTEXT.md
+cnotes summary
+cnotes teach > CONTEXT.md
 ```
 
 ### Exploring interactively
 
 ```bash
-cbase console
+cnotes console
 > const epics = await collection.query(Epic).fetchAll()
 > epics.map(e => e.title)
 ```
@@ -586,8 +586,8 @@ cbase console
 
 ```bash
 # Add to Claude Desktop config
-cbase mcp --contentFolder ./docs
+cnotes mcp --contentFolder ./docs
 
 # Or expose over HTTP
-cbase mcp --transport http --port 3003
+cnotes mcp --transport http --port 3003
 ```

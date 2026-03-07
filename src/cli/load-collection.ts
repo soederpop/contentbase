@@ -171,7 +171,7 @@ export async function loadCollection(options: {
     );
   } else {
     console.warn(
-      `[contentbase] No models or markdown files found in ${rootPath}. Run 'cbase init' to set up a project.`
+      `[contentbase] No models or markdown files found in ${rootPath}. Run 'cnotes init' to set up a project.`
     );
   }
 
