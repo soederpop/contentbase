@@ -1,9 +1,18 @@
 {
   "name": "contentbase",
   "version": "0.0.5",
+  "website": "https://contentbase.soederpop.com",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "keywords": [
+	"markdown",
+	"orm",
+	"headless cms",
+	"semantic search",
+	"content api",
+	"markdown ast",
+  ],
   "bin": {
     "cnotes": "./src/cli/index.ts",
     "contentbase": "./src/cli/index.ts"
