@@ -1,8 +1,10 @@
 import fs from "fs/promises";
 import path from "path";
+import { existsSync } from "fs";
 import { Collection } from "../collection";
 import { defineModel } from "../define-model";
 import { singularize, upperFirst } from "../utils/inflect";
+import * as contentbaseExports from "../index";
 
 /**
  * Search for a file with the given basename and common extensions.
@@ -97,14 +99,54 @@ async function autoDiscoverModels(collection: Collection): Promise<number> {
   return registered;
 }
 
+/** Seed the luca VM with contentbase and common deps so models.ts can resolve imports */
+function seedContentbaseModules(container: any): void {
+  const vm = container.feature('vm')
+
+  // Seed luca modules first
+  const helpers = container.feature('helpers')
+  if (helpers?.seedVirtualModules) {
+    helpers.seedVirtualModules()
+  }
+
+  vm.defineModule('contentbase', contentbaseExports)
+  try { vm.defineModule('js-yaml', require('js-yaml')) } catch {}
+  try { vm.defineModule('mdast-util-to-string', require('mdast-util-to-string')) } catch {}
+}
+
+/** Build a VM-backed module loader using the luca container */
+function createVmModuleLoader(container: any): (filePath: string) => Record<string, any> {
+  let seeded = false
+  return (filePath: string) => {
+    if (!seeded) {
+      seedContentbaseModules(container)
+      seeded = true
+    }
+    return container.feature('vm').loadModule(filePath)
+  }
+}
+
 export async function loadCollection(options: {
   contentFolder?: string;
   modulePath?: string;
+  container?: any;
 }): Promise<Collection> {
   let { contentFolder, modulePath } = options;
+  let container = options.container;
   let rootPath: string | undefined;
 
   const cwd = process.cwd();
+
+  // If no container was passed, try to grab the luca singleton.
+  // This works when running inside the cnotes CLI (which imports @soederpop/luca/node).
+  if (!container) {
+    try {
+      const luca = await import('@soederpop/luca/node');
+      container = luca.default;
+    } catch {
+      // Not running in a luca context — that's fine, native imports will be used
+    }
+  }
 
   if (contentFolder) {
     // Resolve relative to cwd
@@ -124,13 +166,25 @@ export async function loadCollection(options: {
     rootPath = rootPath ?? path.resolve(cwd, "docs");
   }
 
+  // Determine if we need a VM-based loader (no contentbase in node_modules)
+  const needsVmLoader = container?.feature && !existsSync(path.resolve(cwd, "node_modules", "contentbase"));
+  const moduleLoader = needsVmLoader ? createVmModuleLoader(container) : undefined;
+
+  // Helper to import a module file, falling back to VM when needed
+  const importModule = async (filePath: string): Promise<Record<string, any>> => {
+    if (moduleLoader) {
+      return moduleLoader(filePath);
+    }
+    return import(filePath);
+  };
+
   // Tier 1: index.ts — full collection with models already registered
   if (!modulePath) {
     modulePath = await findFile(rootPath, "index");
   }
 
   if (modulePath) {
-    const mod = await import(modulePath);
+    const mod = await importModule(modulePath);
     const collection = mod.collection ?? mod.default;
     if (!(collection instanceof Collection)) {
       throw new Error(
@@ -145,8 +199,8 @@ export async function loadCollection(options: {
   const modelsPath = await findFile(rootPath, "models");
 
   if (modelsPath) {
-    const mod = await import(modelsPath);
-    const collection = new Collection({ rootPath });
+    const mod = await importModule(modelsPath);
+    const collection = new Collection({ rootPath, moduleLoader });
 
     let registered = 0;
     for (const [, value] of Object.entries(mod)) {
@@ -156,13 +210,12 @@ export async function loadCollection(options: {
       }
     }
 
-
     await collection.load();
     return collection;
   }
 
   // Tier 3: Auto-discover models from folder structure
-  const collection = new Collection({ rootPath });
+  const collection = new Collection({ rootPath, moduleLoader });
   const discovered = await autoDiscoverModels(collection);
 
   if (discovered > 0) {

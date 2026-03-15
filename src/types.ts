@@ -22,6 +22,8 @@ export interface CollectionOptions {
   name?: string;
   /** When true (default), load() looks for a models.{ts,js,mjs} in rootPath and auto-registers exported model definitions. */
   autoDiscover?: boolean;
+  /** Optional custom module loader for models.ts discovery. When provided, used instead of native import(). Enables VM-based loading in compiled binaries where node_modules aren't available. */
+  moduleLoader?: (filePath: string) => Record<string, any> | Promise<Record<string, any>>;
 }
 
 // ─── Section system ───

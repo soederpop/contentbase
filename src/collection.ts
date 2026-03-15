@@ -117,12 +117,14 @@ export class Collection {
     new Map();
   #loaded = false;
   #autoDiscover: boolean;
+  #moduleLoader?: (filePath: string) => Record<string, any> | Promise<Record<string, any>>;
 
   constructor(options: CollectionOptions) {
     this.rootPath = path.resolve(options.rootPath);
     this.name = options.name ?? options.rootPath;
     this.extensions = options.extensions ?? ["mdx", "md"];
     this.#autoDiscover = options.autoDiscover ?? true;
+    this.#moduleLoader = options.moduleLoader;
   }
 
   // ─── Model registration ───
@@ -159,7 +161,9 @@ export class Collection {
     for (const ext of ["ts", "js", "mjs"]) {
       const candidate = path.resolve(this.rootPath, `models.${ext}`);
       try {
-        const mod = await import(candidate);
+        const mod = this.#moduleLoader
+          ? await this.#moduleLoader(candidate)
+          : await import(candidate);
         for (const value of Object.values(mod)) {
           if (isModelDefinition(value) && !this.#models.has((value as any).name)) {
             this.register(value as any);
