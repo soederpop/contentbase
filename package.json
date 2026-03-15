@@ -1,18 +1,10 @@
 {
   "name": "contentbase",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "website": "https://contentbase.soederpop.com",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "keywords": [
-	"markdown",
-	"orm",
-	"headless cms",
-	"semantic search",
-	"content api",
-	"markdown ast",
-  ],
   "bin": {
     "cnotes": "./src/cli/index.ts",
     "contentbase": "./src/cli/index.ts"
@@ -25,7 +17,7 @@
     "compile": "bun build ./src/cli/index.ts --compile --outfile dist/cnotes --external @node-llama-cpp/*"
   },
   "dependencies": {
-    "@soederpop/luca": "^0.0.2",
+    "@soederpop/luca": "^0.0.5",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "mdast-util-mdxjs-esm": "^2.0.1",
