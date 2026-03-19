@@ -1,6 +1,6 @@
 {
   "name": "contentbase",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "website": "https://contentbase.soederpop.com",
   "type": "module",
   "main": "./src/index.ts",
@@ -18,7 +18,7 @@
     "compile:all": "bun build ./src/cli/index.ts --compile --target=bun-linux-x64 --outfile dist/cnotes-linux-x64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-linux-arm64 --outfile dist/cnotes-linux-arm64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-darwin-x64 --outfile dist/cnotes-darwin-x64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-darwin-arm64 --outfile dist/cnotes-darwin-arm64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-windows-x64 --outfile dist/cnotes-windows-x64.exe --external @node-llama-cpp/*"
   },
   "dependencies": {
-    "@soederpop/luca": ">0.0.5",
+    "@soederpop/luca": "latest",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "mdast-util-mdxjs-esm": "^2.0.1",

@@ -43,12 +43,11 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   }
 
   // Parse --meta.* flags from raw argv
+  // minimist nests dotted keys: --meta.status active → { meta: { status: 'active' } }
   const metaOverrides: Record<string, unknown> = {}
-  const rawArgs = context.container.argv
-  for (const key of Object.keys(rawArgs)) {
-    if (key.startsWith('meta.')) {
-      metaOverrides[key.slice(5)] = rawArgs[key]
-    }
+  const rawMeta = context.container.argv.meta
+  if (rawMeta && typeof rawMeta === 'object') {
+    Object.assign(metaOverrides, rawMeta)
   }
 
   // Build meta from priority layers: zod defaults < definition.defaults < template frontmatter < CLI overrides
