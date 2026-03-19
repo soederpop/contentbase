@@ -1,6 +1,7 @@
 {
   "name": "contentbase",
-  "version": "0.1.2",
+  "version": "0.1.3",
+  "repository": "https://github.com/soederpop/contentbase",
   "website": "https://contentbase.soederpop.com",
   "type": "module",
   "main": "./src/index.ts",
@@ -15,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "examples": "bun run scripts/examples/run-all.ts",
     "compile": "bun build ./src/cli/index.ts --compile --outfile dist/cnotes --external @node-llama-cpp/*",
-    "compile:all": "bun build ./src/cli/index.ts --compile --target=bun-linux-x64 --outfile dist/cnotes-linux-x64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-linux-arm64 --outfile dist/cnotes-linux-arm64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-darwin-x64 --outfile dist/cnotes-darwin-x64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-darwin-arm64 --outfile dist/cnotes-darwin-arm64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-windows-x64 --outfile dist/cnotes-windows-x64.exe --external @node-llama-cpp/*"
+    "compile:all": "bun build ./src/cli/index.ts --compile --target=bun-linux-x64 --outfile dist/cnotes-linux-x64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-linux-arm64 --outfile dist/cnotes-linux-arm64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-darwin-x64 --outfile dist/cnotes-darwin-x64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-darwin-arm64 --outfile dist/cnotes-darwin-arm64 --external @node-llama-cpp/* && bun build ./src/cli/index.ts --compile --target=bun-windows-x64 --outfile dist/cnotes-windows-x64.exe --external @node-llama-cpp/*",
+    "release": "./scripts/release.sh"
   },
   "dependencies": {
     "@soederpop/luca": "latest",

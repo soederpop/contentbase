@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { commands } from './registry.js'
+import pkg from '../../package.json'
 
 // Side-effect imports register all commands
 import './commands/index.js'
@@ -13,6 +14,11 @@ async function main() {
   // Dynamic import so the library stays luca-free; only the CLI pulls it in
   const luca = await import('@soederpop/luca/node')
   const container = luca.default
+
+  if (container.argv.version || container.argv.v) {
+    console.log(`cnotes ${pkg.version}\n${pkg.repository}`)
+    return
+  }
 
   const commandName = container.argv._[0] as string | undefined
   const wantsHelp = container.argv.help || container.argv.h
