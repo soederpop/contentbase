@@ -60,6 +60,7 @@ collection.register(Post);
 
 commands.register('init', {
   description: 'Initialize a new contentbase project',
+  usage: '[name]',
   help: `# cnotes init
 
 Scaffold a new contentbase project with a sample model and document.

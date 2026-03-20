@@ -38,6 +38,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('action', {
   description: 'Run a named action on the collection',
+  usage: '<name>',
   help: `# cnotes action
 
 Run a named action registered on the collection. Actions are custom functions defined in your collection's entry point.

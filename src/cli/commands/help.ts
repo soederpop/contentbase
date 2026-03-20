@@ -22,7 +22,8 @@ async function handler(_options: any, context: { container: any }) {
 
   for (const name of commands.available) {
     const def = commands.get(name)!
-    lines.push(`| \`${name}\` | ${def.description} |`)
+    const label = def.usage ? `${name} ${def.usage}` : name
+    lines.push(`| \`${label}\` | ${def.description} |`)
   }
 
   lines.push(

@@ -123,6 +123,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('extract', {
   description: 'Extract specific sections from documents',
+  usage: '<glob>',
   help: `# cnotes extract
 
 Extract specific sections from one or more documents. Supports glob patterns for matching multiple documents and outputs clean markdown with normalized headings.

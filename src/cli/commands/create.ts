@@ -2,6 +2,7 @@ import { z } from 'zod'
 import fs from 'fs/promises'
 import path from 'path'
 import matter from 'gray-matter'
+import { execSync } from 'child_process'
 import { commands } from '../registry.js'
 import { loadCollection } from '../load-collection.js'
 import { kebabCase } from '../../utils/inflect.js'
@@ -10,6 +11,7 @@ import { introspectMetaSchema } from '../../collection.js'
 const argsSchema = z.object({
   title: z.string().optional(),
   contentFolder: z.string().optional(),
+  openEditor: z.boolean().optional(),
 })
 
 async function handler(options: z.infer<typeof argsSchema>, context: { container: any }) {
@@ -125,10 +127,37 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   await fs.writeFile(filePath, content, 'utf8')
 
   console.log(`Created ${filePath}`)
+
+  if (options.openEditor) {
+    const editor = process.env.EDITOR
+    if (editor) {
+      execSync(`${editor} ${filePath}`, { stdio: 'inherit' })
+    } else {
+      const candidates = ['cursor', 'code', 'vim']
+      let found = false
+      for (const cmd of candidates) {
+        try {
+          execSync(`which ${cmd}`, { stdio: 'ignore' })
+          execSync(`${cmd} ${filePath}`, { stdio: 'inherit' })
+          found = true
+          break
+        } catch {
+          // not available, try next
+        }
+      }
+      if (!found) {
+        console.error(
+          'No editor found. Tried: cursor, code, vim. Set $EDITOR to your preferred editor.'
+        )
+        process.exit(1)
+      }
+    }
+  }
 }
 
 commands.register('create', {
   description: 'Create a new document for a model type',
+  usage: '<model>',
   help: `# cnotes create
 
 Create a new document for a registered model, with proper frontmatter defaults and section scaffolding.
@@ -151,6 +180,7 @@ cnotes create <model> --title "Document Title" [options]
 |--------|-------------|
 | \`--title\` | **Required.** Title for the new document (used as H1 and slug) |
 | \`--meta.*\` | Set frontmatter fields (e.g. \`--meta.status active\`) |
+| \`--open-editor\` | Open the new file in your editor ($EDITOR, or tries cursor/code/vim) |
 | \`--contentFolder\` | Path to content folder |
 
 ## Template Lookup

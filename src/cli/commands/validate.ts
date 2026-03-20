@@ -85,6 +85,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
 commands.register('validate', {
   description: 'Validate documents against their model schemas',
+  usage: '[model]',
   help: `# cnotes validate
 
 Validate documents against their model schemas. Check frontmatter types, required fields, and optionally fill in missing defaults.

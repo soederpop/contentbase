@@ -223,6 +223,7 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
 
 commands.register('search', {
   description: 'Semantic search across collection documents',
+  usage: '<query>',
   help: `# cnotes search
 
 Search documents in the collection using keyword, semantic, or hybrid search modes. Requires a search index — run \`cnotes embed\` first.

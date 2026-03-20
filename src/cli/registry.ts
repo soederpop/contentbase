@@ -2,6 +2,7 @@ import type { z } from 'zod'
 
 export interface CommandDefinition {
   description: string
+  usage?: string
   help?: string
   argsSchema?: z.ZodType<any>
   handler: (options: any, context: { container: any }) => Promise<void>

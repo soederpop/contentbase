@@ -86,6 +86,7 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
 
 commands.register('text-search', {
   description: 'Search file contents with pattern matching',
+  usage: '<pattern>',
   help: `# cnotes text-search
 
 Search file contents within the collection using ripgrep. Returns matching files by default, or line-level detail with \`--expanded\`.
