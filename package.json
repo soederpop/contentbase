@@ -1,6 +1,6 @@
 {
   "name": "contentbase",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "repository": "https://github.com/soederpop/contentbase",
   "website": "https://contentbase.soederpop.com",
   "type": "module",

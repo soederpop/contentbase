@@ -91,7 +91,8 @@ export function createModelInstance<
           document,
           collection,
           bt,
-          createModelInstance
+          createModelInstance,
+          definition
         );
       }
     }

@@ -1,5 +1,6 @@
 import { toString } from "mdast-util-to-string";
 import { kebabCase } from "../utils/inflect";
+import { matchPatterns } from "../utils/match-pattern";
 import type { Document } from "../document";
 import type { Collection } from "../collection";
 import type {
@@ -140,7 +141,13 @@ export class HasManyRelationship<
     for (const pathId of this.#collection.available) {
       if (!pathId.startsWith(prefix + "/")) continue;
       const doc = this.#collection.document(pathId);
-      if (doc.meta[fk] === slug) {
+      // Check raw frontmatter first, then fall back to pattern-inferred meta
+      let fkValue = doc.meta[fk];
+      if (fkValue === undefined && targetDef.pattern) {
+        const patternMeta = matchPatterns(targetDef.pattern, pathId);
+        if (patternMeta) fkValue = patternMeta[fk];
+      }
+      if (fkValue === slug) {
         results.push(this.#factory(doc, targetDef, this.#collection));
       }
     }
