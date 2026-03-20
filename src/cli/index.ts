@@ -15,12 +15,12 @@ async function main() {
   const luca = await import('@soederpop/luca/node')
   const container = luca.default
 
-  if (container.argv.version || container.argv.v) {
+  const commandName = container.argv._[0] as string | undefined
+
+  if (container.argv.version || container.argv.v || commandName === 'version') {
     console.log(`cnotes ${pkg.version}\n${pkg.repository}`)
     return
   }
-
-  const commandName = container.argv._[0] as string | undefined
   const wantsHelp = container.argv.help || container.argv.h
 
   // Bare invocation or explicit "help" with no subcommand
