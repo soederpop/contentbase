@@ -1,6 +1,6 @@
 {
   "name": "contentbase",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "repository": "https://github.com/soederpop/contentbase",
   "website": "https://contentbase.soederpop.com",
   "type": "module",
@@ -50,6 +50,11 @@
     "vitest": "^1.6.0"
   },
   "luca": {
-    "aliases": ["contentbase", "content base", "content", "the orm"]
+    "aliases": [
+      "contentbase",
+      "content base",
+      "content",
+      "the orm"
+    ]
   }
 }
