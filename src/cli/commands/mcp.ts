@@ -6,7 +6,7 @@ import matter from 'gray-matter'
 import { commands } from '../registry.js'
 import { loadCollection } from '../load-collection.js'
 import { introspectMetaSchema, validateDocument } from '../../index.js'
-import { resolveModelDef, buildSchemaJSON } from '../../api/helpers.js'
+import { resolveModelDef, buildSchemaJSON } from './api/helpers.js'
 import { queryDSLSchema, executeQueryDSL } from '../../query/query-dsl.js'
 // MCPServer type comes from container.server('mcp', ...) at runtime
 

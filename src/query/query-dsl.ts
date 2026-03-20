@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { Collection } from "../collection";
 import type { Condition } from "./query-builder";
 import type { Operator } from "./operators";
-import { resolveModelDef } from "../api/helpers.js";
+import { resolveModelDef } from "../cli/commands/api/helpers.js";
 
 // ---------------------------------------------------------------------------
 // Operator mapping: $dsl → internal

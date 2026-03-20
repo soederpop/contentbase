@@ -172,9 +172,10 @@ describe("Collection", () => {
       expect(text).toContain("Model: Epic");
       expect(text).toContain("Model: Story");
 
-      // Prefixes
-      expect(text).toContain("Prefix: epics");
-      expect(text).toContain("Prefix: stories");
+      // Path prefixes
+      expect(text).toContain("Path prefix:");
+      expect(text).toMatch(/epics\/\*\.md/);
+      expect(text).toMatch(/stories\/\*\.md/);
 
       // Meta attributes
       expect(text).toContain("priority");

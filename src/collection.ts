@@ -715,7 +715,7 @@ export class Collection {
    * Generate a plain-text summary of the collection and its models.
    * Returns the same output as `cnotes inspect`.
    */
-  generateModelSummary(): string {
+  generateModelSummary(options: { includeIds?: boolean } = {}): string {
     if (!this.#loaded) {
       throw new Error("Collection has not been loaded. Call load() first.");
     }
@@ -728,11 +728,17 @@ export class Collection {
     lines.push("");
 
     for (const def of this.modelDefinitions) {
-      const matchingItems = this.available.filter(
-        (id) => this.findModelDefinition(id)?.name === def.name
-      );
       lines.push(`  Model: ${def.name}`);
-      lines.push(`    Prefix: ${def.prefix}`);
+      if (def.description) {
+        lines.push(`    Description: ${def.description}`);
+      }
+      if (def.pattern) {
+        const patterns = Array.isArray(def.pattern) ? def.pattern : [def.pattern];
+        lines.push(`    Path prefix: ${patterns.join(", ")}`);
+      } else {
+        const rel = path.relative(process.cwd(), path.join(this.rootPath, def.prefix));
+        lines.push(`    Path prefix: ${rel}/*.md`);
+      }
       const fields = introspectMetaSchema(def.meta);
       lines.push(
         `    Meta: ${fields.length > 0 ? fields.map((f) => `${f.name}(${f.type})`).join(", ") : "(none)"}`
@@ -743,9 +749,13 @@ export class Collection {
       lines.push(
         `    Relationships: ${Object.keys(def.relationships).join(", ") || "(none)"}`
       );
-      lines.push(`    Documents: ${matchingItems.length}`);
-      if (matchingItems.length > 0) {
-        lines.push(`    IDs: ${matchingItems.join(", ")}`);
+      if (options.includeIds) {
+        const matchingItems = this.available.filter(
+          (id) => this.findModelDefinition(id)?.name === def.name
+        );
+        if (matchingItems.length > 0) {
+          lines.push(`    IDs: ${[...matchingItems].sort().join(", ")}`);
+        }
       }
       lines.push("");
     }
@@ -762,8 +772,8 @@ export class Collection {
    * Preserves the `## Overview` section if it already exists.
    * The generated summary is placed in the `## Summary` section.
    */
-  async saveModelSummary(): Promise<string> {
-    const summary = this.generateModelSummary();
+  async saveModelSummary(options: { includeIds?: boolean } = {}): Promise<string> {
+    const summary = this.generateModelSummary(options);
     const modelsPath = path.join(this.rootPath, "README.md");
 
     // Preserve existing Overview section content

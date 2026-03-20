@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { resolveModelDef } from '../helpers.js'
-import { queryDSLSchema, executeQueryDSL } from '../../query/query-dsl.js'
+import { queryDSLSchema, executeQueryDSL } from '../../../../query/query-dsl.js'
 
 export const path = '/api/query'
 export const description = 'Query model instances with filtering'

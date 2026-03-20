@@ -9,6 +9,7 @@ import {
 
 export const Idea = defineModel("Idea", {
 	prefix: "ideas",
+	description: 'Ideas are used to capture thoughts for new features, apis, etc',
 	meta: z.object({
 		goal: z.string().optional().describe("Slug of the goal this idea is aligned to"),
 		tags: z.array(z.string()).default([]).describe("Arbitrary tags for categorizing the idea"),
@@ -18,8 +19,10 @@ export const Idea = defineModel("Idea", {
 
 export const Tutorial = defineModel("Tutorial", {
 	prefix: "tutorials",
+	pattern: ['tutorials/:slug', 'tutorials/:category/:slug'],
 	meta: z.object({
 		tags: z.array(z.string()).default([]).describe("Arbitrary tags for categorizing the tutorial"),
+		category: z.string().default('contentbase')
 	}),
 })
 

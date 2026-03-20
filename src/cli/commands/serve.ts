@@ -3,7 +3,8 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { commands } from '../registry.js'
 import { loadCollection } from '../load-collection.js'
-import { buildSchemaJSON } from '../../api/helpers.js'
+import { buildSchemaJSON } from './api/helpers.js'
+import { builtinEndpoints } from './api/endpoints/index.js'
 
 const argsSchema = z.object({
   port: z.number().default(8000),
@@ -118,9 +119,8 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     historyFallback: false,
   }) as any
 
-  // Load built-in contentbase endpoints
-  const builtinEndpointsDir = path.resolve(import.meta.dir, '../../api/endpoints')
-  await expressServer.useEndpoints(builtinEndpointsDir)
+  // Load built-in contentbase endpoints (statically imported so they survive bun compile)
+  await expressServer.useEndpointModules(builtinEndpoints)
 
   // Load user endpoints if present
   if (userEndpointsDir) {

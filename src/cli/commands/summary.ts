@@ -6,6 +6,7 @@ import { loadCollection } from '../load-collection.js'
 
 const argsSchema = z.object({
   contentFolder: z.string().optional(),
+  includeIds: z.boolean().optional().default(false),
 })
 
 async function handler(options: z.infer<typeof argsSchema>) {
@@ -13,7 +14,7 @@ async function handler(options: z.infer<typeof argsSchema>) {
     contentFolder: options.contentFolder,
   })
 
-  await collection.saveModelSummary()
+  await collection.saveModelSummary({ includeIds: options.includeIds })
   console.log(`README.md written to ${collection.rootPath}/README.md`)
 
   const toc = collection.tableOfContents({ title: 'Table of Contents' })
@@ -39,6 +40,7 @@ cnotes summary [options]
 | Option | Description |
 |--------|-------------|
 | \`--contentFolder\` | Path to content folder |
+| \`--include-ids\` | Include document IDs in the summary (default: false) |
 
 ## Generated Files
 

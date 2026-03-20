@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { validateDocument } from '../../index.js'
+import { validateDocument } from '../../../../index.js'
 import { resolveModelDef } from '../helpers.js'
 
 export const path = '/api/validate'
