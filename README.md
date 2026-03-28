@@ -402,6 +402,96 @@ const result = await executeQueryDSL(collection, {
 
 ---
 
+## Semantic Search
+
+Contentbase includes built-in semantic search that combines vector embeddings, BM25 keyword ranking, and your content models' metadata — so you can ask natural-language questions and scope results to specific models and frontmatter values in the same query.
+
+### Setup
+
+Generate embeddings for your collection:
+
+```bash
+# Uses OpenAI embeddings by default (requires OPENAI_API_KEY)
+cnotes embed
+
+# Or use local embeddings (no API key needed — auto-installs node-llama-cpp)
+cnotes embed --local
+
+# Check index health
+cnotes embed --status
+```
+
+The index is stored in `.contentbase/search.sqlite`. Documents are split into chunks at H2 section boundaries and each chunk is embedded independently, so search results can point to specific sections within a document. Only changed documents are re-embedded on subsequent runs (tracked via content hashes).
+
+### Searching
+
+```bash
+# Hybrid search (default) — combines keyword + vector for best results
+cnotes search "authentication patterns"
+
+# Keyword-only (BM25 ranking) — fast, good for exact terms
+cnotes search "deploymentConfig" --mode keyword
+
+# Vector-only (semantic similarity) — understands meaning, not just words
+cnotes search "how do deployments work" --mode vector
+```
+
+### Combining Search with Model Metadata
+
+The real power is combining semantic understanding with your content models' structured metadata. The `--model` flag scopes results to a specific model, and `--where` filters on frontmatter fields — so your Zod schemas double as search facets:
+
+```bash
+# Find approved plans related to infrastructure
+cnotes search "infrastructure" --model Plan --where "status=approved"
+
+# Search only within epics that are in progress
+cnotes search "user onboarding" --model Epic --where "status=in-progress"
+
+# Combine model filtering with result limits
+cnotes search "auth" --model Story -n 5
+```
+
+This means the same schema you use for validation and querying also powers search filtering. A model with `status`, `priority`, or `category` in its meta schema automatically becomes filterable in search — no extra configuration.
+
+### Search Modes
+
+| Mode | Algorithm | Best for |
+|------|-----------|----------|
+| `hybrid` (default) | BM25 + vector cosine similarity | General-purpose queries |
+| `keyword` | BM25 full-text ranking | Exact terms, code identifiers, names |
+| `vector` | Embedding cosine similarity | Conceptual queries, "how does X work" |
+
+### CLI Reference
+
+```bash
+cnotes search <query> [options]
+  --mode hybrid|keyword|vector   Search mode (default: hybrid)
+  --model <name>                 Filter by content model
+  --where <filter>               Metadata filter, e.g. "status=approved"
+  -n <number>                    Max results (default: 10)
+  --json                         Output as JSON
+  --full                         Include full document content in output
+  --bootstrap                    Build index if missing, then search
+
+cnotes embed [options]
+  --force                        Re-embed everything (ignore content hashes)
+  --provider openai|local        Embedding provider (default: openai)
+  --status                       Show index health without embedding
+  --local                        Use local embeddings (auto-installs if needed)
+  --install-local                Only install node-llama-cpp, then exit
+```
+
+### REST API
+
+When running `cnotes serve`, search is also available over HTTP:
+
+```
+GET  /api/search?q=<query>&mode=hybrid&model=Epic&limit=10
+POST /api/search  { "query": "...", "mode": "hybrid", "model": "Epic", "where": { "status": "approved" } }
+```
+
+---
+
 ## Validation
 
 Every model instance can be validated against its Zod schemas:
