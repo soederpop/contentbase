@@ -193,22 +193,29 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
     return
   }
 
-  const header = `| # | Score | Document | Match |`
-  const separator = `|---|-------|----------|-------|`
-  const rows = results.map((r: any, i: number) => {
-    const score = `${Math.round(r.score * 100)}%`
-    const doc = r.title || r.pathId
-    let match = ''
-    if (r.snippet) {
-      const snippet = r.snippet.replace(/\n/g, ' ').replace(/\|/g, '\\|').substring(0, 80)
-      const section = r.matchedSection || ''
-      match = section ? `**${section}**: ${snippet}` : snippet
-    }
-    return `| ${i + 1} | ${score} | ${doc} | ${match} |`
-  })
+  const colors = ui.colors
+  const cols = process.stdout.columns || 80
+  const pad = '   '
+  const maxSnippet = cols - pad.length - 2
 
-  const table = [header, separator, ...rows].join('\n')
-  ui.markdown(table)
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i]
+    const title = r.title || r.pathId
+    console.log(`${colors.dim(`${i + 1}.`)} ${colors.bold(title)}`)
+    let relPath = r.pathId
+    try { relPath = path.relative(process.cwd(), collection.document(r.pathId).path) } catch {}
+    console.log(`${pad}${colors.cyan(relPath)}`)
+    if (r.snippet) {
+      let snippet = r.snippet
+        .replace(/>>>/g, '').replace(/<<</g, '')
+        .replace(/\n/g, ' ').replace(/\s+/g, ' ')
+        .replace(/[`*_~\[\]]/g, '').trim()
+      if (r.matchedSection) snippet = `${r.matchedSection} — ${snippet}`
+      if (snippet.length > maxSnippet) snippet = snippet.substring(0, maxSnippet - 1) + '…'
+      console.log(`${pad}${colors.dim(snippet)}`)
+    }
+    if (i < results.length - 1) console.log()
+  }
 
   if (options.full) {
     for (const r of results) {

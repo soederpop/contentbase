@@ -191,9 +191,17 @@ export class Collection {
   }
 
   get available(): string[] {
-    return Array.from(this.#items.keys()).filter(
-      (id) => !this.#isExcludedByModel(id)
-    );
+    return Array.from(this.#items.keys())
+      .filter((id) => !this.#isExcludedByModel(id))
+      .sort();
+  }
+
+  /**
+   * Match available pathIds against one or more glob patterns.
+   */
+  matchPaths(patterns: string | string[]): string[] {
+    const isMatch = picomatch(patterns);
+    return this.available.filter((id) => isMatch(id));
   }
 
   /**
