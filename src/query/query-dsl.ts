@@ -122,7 +122,7 @@ export function parseWhereClause(
           );
         }
 
-        const operator = OPERATOR_MAP[opKey];
+        const operator = OPERATOR_MAP[opKey]!;
 
         // Regex length guard
         if (

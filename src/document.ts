@@ -9,6 +9,8 @@ import { NodeShortcuts } from "./node-shortcuts";
 import { stringifyAst } from "./utils/stringify-ast";
 import { normalizeHeadings } from "./utils/normalize-headings";
 import { parseTable } from "./utils/parse-table";
+import { stripMarkdown } from "./utils/strip-markdown";
+import type { StripMarkdownOptions } from "./utils/strip-markdown";
 import type { Root, Content, RootContent, Heading } from "mdast";
 import type { Collection } from "./collection";
 
@@ -441,6 +443,10 @@ export class Document {
       updatedAt: this.updatedAt,
       size: this.size,
     };
+  }
+
+  stripMarkdown(options?: StripMarkdownOptions): string {
+    return stripMarkdown(this.ast, options);
   }
 
   toText(

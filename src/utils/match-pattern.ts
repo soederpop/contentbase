@@ -31,8 +31,8 @@ export function matchPattern(
   const params: Record<string, string> = {};
 
   for (let i = 0; i < patternParts.length; i++) {
-    const pat = patternParts[i];
-    const val = pathParts[i];
+    const pat = patternParts[i]!;
+    const val = pathParts[i]!;
 
     if (pat.startsWith(":")) {
       params[pat.slice(1)] = val;

@@ -4,8 +4,8 @@
   "repository": "https://github.com/soederpop/contentbase",
   "website": "https://contentbase.soederpop.com",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "cnotes": "./src/cli/index.ts",
     "contentbase": "./src/cli/index.ts"
@@ -13,6 +13,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "build": "find dist -name '*.d.ts' -o -name '*.d.ts.map' -o -name '*.js' -o -name '*.js.map' | xargs rm -f 2>/dev/null; tsc",
     "typecheck": "tsc --noEmit",
     "examples": "bun run scripts/examples/run-all.ts",
     "compile": "bun build ./src/cli/index.ts --compile --outfile dist/cnotes --external @node-llama-cpp/*",

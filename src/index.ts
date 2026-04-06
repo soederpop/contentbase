@@ -39,6 +39,10 @@ export { validateDocument } from "./validator";
 // Pattern matching
 export { matchPattern, matchPatterns } from "./utils/match-pattern";
 
+// Markdown utilities
+export { stripMarkdown } from "./utils/strip-markdown";
+export type { StripMarkdownOptions } from "./utils/strip-markdown";
+
 import { toString } from "mdast-util-to-string";
 
 // Types

@@ -135,7 +135,7 @@ export class HasManyRelationship<
     // e.g. Project hasMany Plans → looks for meta.project on Plan documents.
     const fk = this.#definition.foreignKey || this.#inferForeignKey();
     const slug = this.#document.slug;
-    const parentPrefix = this.#document.id.split("/")[0];
+    const parentPrefix = this.#document.id.split("/")[0]!;
     const idSegment = this.#document.id.slice(parentPrefix.length + 1);
     const prefix = targetDef.prefix;
     const results: InferModelInstance<TTarget>[] = [];
@@ -162,7 +162,7 @@ export class HasManyRelationship<
    * e.g. if the parent is in "projects/", the FK is "project" (singularized, lowercased).
    */
   #inferForeignKey(): string {
-    const parentPrefix = this.#document.id.split("/")[0];
+    const parentPrefix = this.#document.id.split("/")[0]!;
     // Simple singularize: strip trailing "s"
     return parentPrefix.replace(/s$/, "");
   }

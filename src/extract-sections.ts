@@ -2,6 +2,8 @@ import { toString } from "mdast-util-to-string";
 import { AstQuery } from "./ast-query";
 import { NodeShortcuts } from "./node-shortcuts";
 import { stringifyAst } from "./utils/stringify-ast";
+import { stripMarkdown } from "./utils/strip-markdown";
+import type { StripMarkdownOptions } from "./utils/strip-markdown";
 import type { Root, Content, RootContent, Heading } from "mdast";
 import type { ParsedDocument } from "./parse";
 
@@ -150,6 +152,7 @@ function buildParsedDocument(ast: Root): ParsedDocument {
     nodes,
     title,
     stringify: (tree: Root = ast) => stringifyAst(tree),
+    stripMarkdown: (options?: StripMarkdownOptions) => stripMarkdown(ast, options),
     extractSection,
     querySection,
   };

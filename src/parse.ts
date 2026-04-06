@@ -7,6 +7,8 @@ import { toString } from "mdast-util-to-string";
 import { AstQuery } from "./ast-query";
 import { NodeShortcuts } from "./node-shortcuts";
 import { stringifyAst } from "./utils/stringify-ast";
+import { stripMarkdown } from "./utils/strip-markdown";
+import type { StripMarkdownOptions } from "./utils/strip-markdown";
 import type { Root, Content, RootContent } from "mdast";
 
 const processor = unified().use(remarkParse).use(remarkGfm);
@@ -26,6 +28,8 @@ export interface ParsedDocument {
   title: string;
   /** Stringify an AST back to markdown */
   stringify(ast?: Root): string;
+  /** Strip markdown syntax, returning plain text */
+  stripMarkdown(options?: StripMarkdownOptions): string;
   /** Extract a section by heading text */
   extractSection(heading: string | Content): Content[];
   /** Get a queryable AstQuery scoped to a section */
@@ -107,6 +111,7 @@ export async function parse(input: string): Promise<ParsedDocument> {
     nodes,
     title,
     stringify: (tree: Root = ast) => stringifyAst(tree),
+    stripMarkdown: (options?: StripMarkdownOptions) => stripMarkdown(ast, options),
     extractSection,
     querySection,
   };
