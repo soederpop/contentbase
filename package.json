@@ -1,6 +1,6 @@
 {
   "name": "contentbase",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "repository": "https://github.com/soederpop/contentbase",
   "website": "https://contentbase.soederpop.com",
   "type": "module",
@@ -21,7 +21,7 @@
     "release": "./scripts/release.sh"
   },
   "dependencies": {
-    "@soederpop/luca": ">=0.0.16",
+    "@soederpop/luca": "latest",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "mdast-util-mdxjs-esm": "^2.0.1",
