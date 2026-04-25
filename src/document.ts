@@ -1,6 +1,8 @@
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
+import remarkRehype from "remark-rehype";
+import rehypeStringify from "rehype-stringify";
 import yaml from "js-yaml";
 import { toString } from "mdast-util-to-string";
 import { kebabCase } from "./utils/inflect";
@@ -463,6 +465,16 @@ export class Document {
    * Each heading is indented based on its depth relative to the
    * minimum heading depth found in the document.
    */
+  async toHtml(): Promise<string> {
+    const result = await unified()
+      .use(remarkParse)
+      .use(remarkGfm)
+      .use(remarkRehype)
+      .use(rehypeStringify)
+      .process(this.content);
+    return String(result);
+  }
+
   toOutline(): string {
     const headings = (this.ast.children as Content[]).filter(
       (n): n is Heading => n.type === "heading"
