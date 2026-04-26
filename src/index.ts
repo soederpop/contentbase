@@ -45,6 +45,9 @@ export type { StripMarkdownOptions } from "./utils/strip-markdown";
 
 import { toString } from "mdast-util-to-string";
 
+// Storage adapters
+export { NodeStorageAdapter } from "./adapters/node-fs";
+
 // Types
 export type {
   ModelDefinition,
@@ -61,6 +64,9 @@ export type {
   SerializeOptions,
   SaveOptions,
   DocumentRef,
+  StorageAdapter,
+  FileStat,
+  FileEntry,
 } from "./types";
 
 // Re-export zod for convenience

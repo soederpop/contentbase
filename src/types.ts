@@ -15,6 +15,54 @@ export interface CollectionItem {
   size: number;
 }
 
+// ─── Storage adapter ───
+
+/** File metadata returned by stat and listFiles */
+export interface FileStat {
+  createdAt: Date;
+  updatedAt: Date;
+  size: number;
+}
+
+/** A file entry returned from listFiles — key plus pre-fetched stat */
+export interface FileEntry {
+  key: string;
+  stat: FileStat;
+}
+
+/**
+ * Abstracts file system operations so Collections can run on top of
+ * any storage backend (local disk, Cloudflare R2, S3, etc.).
+ *
+ * Implement this interface and pass it as `adapter` in CollectionOptions.
+ */
+export interface StorageAdapter {
+  /** List all file keys under rootPath whose names match the extension pattern.
+   *  Returns key + pre-fetched stat so load() avoids per-file round-trips. */
+  listFiles(rootPath: string, match: RegExp): Promise<FileEntry[]>;
+
+  /** Read file content as a UTF-8 string */
+  readFile(key: string): Promise<string>;
+
+  /** Fetch metadata for a single key */
+  stat(key: string): Promise<FileStat>;
+
+  /** Write content to key, creating any parent directories/prefixes as needed */
+  writeFile(key: string, content: string): Promise<void>;
+
+  /** Delete the file at key (silently succeeds if the key does not exist) */
+  deleteFile(key: string): Promise<void>;
+
+  /** Join a root and path segments into a full key (e.g. path.resolve for local FS) */
+  join(root: string, ...parts: string[]): string;
+
+  /** Strip the root prefix from a full key to get a relative key */
+  relative(root: string, key: string): string;
+
+  /** Return the file extension including the leading dot (e.g. ".md") */
+  extname(key: string): string;
+}
+
 /** Options when constructing a Collection */
 export interface CollectionOptions {
   rootPath: string;
@@ -24,6 +72,12 @@ export interface CollectionOptions {
   autoDiscover?: boolean;
   /** Optional custom module loader for models.ts discovery. When provided, used instead of native import(). Enables VM-based loading in compiled binaries where node_modules aren't available. */
   moduleLoader?: (filePath: string) => Record<string, any> | Promise<Record<string, any>>;
+  /**
+   * Storage adapter for file system operations.
+   * Defaults to NodeStorageAdapter (local disk via fs/promises).
+   * Swap in a custom adapter to use Cloudflare R2, S3, or any other backend.
+   */
+  adapter?: StorageAdapter;
 }
 
 // ─── Section system ───

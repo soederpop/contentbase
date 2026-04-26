@@ -1,13 +1,12 @@
-import fs from "fs/promises";
 import path from "path";
 import matter from "gray-matter";
 import picomatch from "picomatch";
 import { Document } from "./document";
 import { CollectionQuery } from "./query/collection-query";
 import { createModelInstance } from "./model-instance";
-import { readDirectory } from "./utils/read-directory";
 import { pluralize } from "./utils/inflect";
 import { Base } from "./base-model";
+import { NodeStorageAdapter } from "./adapters/node-fs";
 import type {
   ModelDefinition,
   CollectionItem,
@@ -15,6 +14,7 @@ import type {
   InferModelInstance,
   HasManyDefinition,
   RelationshipDefinition,
+  StorageAdapter,
 } from "./types";
 
 // ─── Zod schema introspection ───
@@ -110,6 +110,7 @@ export class Collection {
   readonly name: string;
   readonly extensions: string[];
 
+  #adapter: StorageAdapter;
   #items: Map<string, CollectionItem> = new Map();
   #documents: Map<string, Document> = new Map();
   #models: Map<string, ModelDefinition<any, any, any, any, any>> = new Map();
@@ -120,7 +121,13 @@ export class Collection {
   #moduleLoader?: (filePath: string) => Record<string, any> | Promise<Record<string, any>>;
 
   constructor(options: CollectionOptions) {
-    this.rootPath = path.resolve(options.rootPath);
+    this.#adapter = options.adapter ?? new NodeStorageAdapter();
+    // Resolve to an absolute path for local FS (NodeStorageAdapter default).
+    // When a custom adapter is provided, rootPath is the backend-specific root
+    // (e.g. a bucket prefix for R2) and is stored as-is.
+    this.rootPath = options.adapter
+      ? options.rootPath
+      : path.resolve(options.rootPath);
     this.name = options.name ?? options.rootPath;
     this.extensions = options.extensions ?? ["mdx", "md"];
     this.#autoDiscover = options.autoDiscover ?? true;
@@ -252,27 +259,26 @@ export class Collection {
       `\\.(${this.extensions.join("|")})$`,
       "i"
     );
-    const paths = await readDirectory(this.rootPath, extensionPattern);
+    const entries = await this.#adapter.listFiles(this.rootPath, extensionPattern);
 
     await Promise.all(
-      paths.map(async (filePath) => {
-        const pathId = this.getPathId(filePath);
+      entries.map(async ({ key, stat }) => {
+        const pathId = this.getPathId(key);
 
         // Globally exclude templates directory — templates are only used
         // for scaffolding and should never appear in queries or listings
         if (pathId.startsWith("templates/") || pathId === "templates") return;
 
-        const raw = await fs.readFile(filePath, "utf8");
-        const stat = await fs.stat(filePath);
+        const raw = await this.#adapter.readFile(key);
         const { data, content } = matter(raw);
 
         this.#items.set(pathId, {
           raw,
           content,
           meta: data,
-          path: filePath,
-          createdAt: stat.ctime,
-          updatedAt: stat.mtime,
+          path: key,
+          createdAt: stat.createdAt,
+          updatedAt: stat.updatedAt,
           size: stat.size,
         });
       })
@@ -448,8 +454,7 @@ export class Collection {
     const item = this.#items.get(pathId)!;
     const filePath = item.path;
 
-    await fs.mkdir(path.parse(filePath).dir, { recursive: true });
-    await fs.writeFile(filePath, options.content, "utf8");
+    await this.#adapter.writeFile(filePath, options.content);
 
     // Update the stored item
     item.raw = options.content;
@@ -468,11 +473,7 @@ export class Collection {
     const item = this.#items.get(pathId);
     if (!item) return this;
 
-    try {
-      await fs.rm(item.path);
-    } catch {
-      // File might not exist
-    }
+    await this.#adapter.deleteFile(item.path);
     this.#items.delete(pathId);
     this.#documents.delete(pathId);
     return this;
@@ -490,8 +491,8 @@ export class Collection {
       filePath = this.resolve(`${pathId}.${extension}`);
     }
 
-    const raw = await fs.readFile(filePath, "utf8");
-    const stat = await fs.stat(filePath);
+    const raw = await this.#adapter.readFile(filePath);
+    const stat = await this.#adapter.stat(filePath);
     const { data, content } = matter(raw);
 
     const item: CollectionItem = {
@@ -499,8 +500,8 @@ export class Collection {
       content,
       meta: data,
       path: filePath,
-      createdAt: stat.ctime,
-      updatedAt: stat.mtime,
+      createdAt: stat.createdAt,
+      updatedAt: stat.updatedAt,
       size: stat.size,
     };
 
@@ -550,11 +551,11 @@ export class Collection {
   // ─── Utilities ───
 
   resolve(...args: string[]): string {
-    return path.resolve(this.rootPath, ...args);
+    return this.#adapter.join(this.rootPath, ...args);
   }
 
-  getPathId(absolutePath: string): string {
-    const relativePath = path.relative(this.rootPath, absolutePath);
+  getPathId(key: string): string {
+    const relativePath = this.#adapter.relative(this.rootPath, key);
     return relativePath.replace(/\.[a-z]+$/i, "");
   }
 
@@ -677,7 +678,7 @@ export class Collection {
 
     for (const pathId of sorted) {
       const item = this.#items.get(pathId)!;
-      const ext = path.extname(item.path);
+      const ext = this.#adapter.extname(item.path);
       const fullPath = `${pathId}${ext}`;
       const parts = fullPath.split("/");
 
@@ -711,7 +712,7 @@ export class Collection {
 
   #tocEntry(pathId: string, basePath: string): string {
     const item = this.#items.get(pathId)!;
-    const ext = path.extname(item.path);
+    const ext = this.#adapter.extname(item.path);
     const relativePath = `${basePath}/${pathId}${ext}`;
     const doc = this.document(pathId);
     return `- [${doc.title}](${relativePath})`;
@@ -782,12 +783,12 @@ export class Collection {
    */
   async saveModelSummary(options: { includeIds?: boolean } = {}): Promise<string> {
     const summary = this.generateModelSummary(options);
-    const modelsPath = path.join(this.rootPath, "README.md");
+    const modelsPath = this.#adapter.join(this.rootPath, "README.md");
 
     // Preserve existing Overview section content
     let overview = "";
     try {
-      const existing = await fs.readFile(modelsPath, "utf8");
+      const existing = await this.#adapter.readFile(modelsPath);
       const overviewStart = existing.indexOf("## Overview");
       if (overviewStart !== -1) {
         const contentStart = existing.indexOf("\n", overviewStart) + 1;
@@ -815,7 +816,7 @@ export class Collection {
     ];
 
     const markdown = lines.join("\n");
-    await fs.writeFile(modelsPath, markdown, "utf8");
+    await this.#adapter.writeFile(modelsPath, markdown);
     return summary;
   }
 
