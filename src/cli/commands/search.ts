@@ -29,7 +29,7 @@ function hasSearchIndex(rootPath: string): boolean {
 async function getSemanticSearch(container: any, rootPath: string) {
   const { SemanticSearch } = await import('@soederpop/luca/agi')
   if (!container.features.available.includes('semanticSearch')) {
-    SemanticSearch.attach(container)
+    (SemanticSearch as any).attach(container as any)
   }
 
   const dbPath = path.join(rootPath, '.contentbase/search.sqlite')

@@ -196,7 +196,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       try {
         const { SemanticSearch } = await import('@soederpop/luca/agi')
         if (!container.features.available.includes('semanticSearch')) {
-          SemanticSearch.attach(container)
+          (SemanticSearch as any).attach(container as any)
         }
         const dbPath = path.join(collection.rootPath, '.contentbase/search.sqlite')
         const ss = container.feature('semanticSearch', { dbPath }) as any

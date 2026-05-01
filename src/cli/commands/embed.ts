@@ -104,7 +104,7 @@ async function installLocal(SemanticSearch: any, container: any): Promise<void> 
 
   // Create a temporary instance to use the install method
   if (!container.features.available.includes('semanticSearch')) {
-    SemanticSearch.attach(container)
+    (SemanticSearch as any).attach(container as any)
   }
   const ss = container.feature('semanticSearch', {
     dbPath: path.join(cwd, '.contentbase/search.sqlite'),
@@ -172,7 +172,7 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
     }
 
     if (!container.features.available.includes('semanticSearch')) {
-      SemanticSearch.attach(container)
+      (SemanticSearch as any).attach(container as any)
     }
     const dbPath = path.join(collection.rootPath, '.contentbase/search.sqlite')
     const ss = container.feature('semanticSearch', {
@@ -207,7 +207,7 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
 
   // Embed / re-embed
   if (!container.features.available.includes('semanticSearch')) {
-    SemanticSearch.attach(container)
+    (SemanticSearch as any).attach(container as any)
   }
   const dbPath = path.join(collection.rootPath, '.contentbase/search.sqlite')
   const ss = container.feature('semanticSearch', {

@@ -39,7 +39,7 @@ export async function get(_params: any, ctx: any) {
 
   const { SemanticSearch } = await import('@soederpop/luca/agi')
   if (!ctx.container.features.available.includes('semanticSearch')) {
-    SemanticSearch.attach(ctx.container)
+(SemanticSearch as any).attach(ctx.container as any)
   }
 
   const dbPath = pathModule.join(rootPath, '.contentbase/search.sqlite')

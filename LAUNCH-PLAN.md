@@ -28,8 +28,8 @@ The biggest launch blocker is implementation polish, not concept quality.
 Verified status at time of writing:
 
 - `bun test`: 249 pass, 18 skipped, 0 fail
-- `bun run typecheck`: fails
-- `bun run build`: fails
+- `bun run typecheck`: passes as of 2026-05-01 on `launch-plan`
+- `bun run build`: passes as of 2026-05-01 on `launch-plan`
 - Local branch: `main` ahead of `origin/main` by 1 commit
 - Latest local commit: `08567f7 introduce StorageAdapter to decouple Collection from the local file system`
 
@@ -201,6 +201,15 @@ Tasks:
 
 Done when all three pass.
 
+**Progress — 2026-05-01 (`launch-plan`):**
+
+- [x] Excluded `src/**/__tests__` from production compile so integration tests can stay runnable without breaking `rootDir`.
+- [x] Fixed relationship parent serialization in API endpoints by avoiding the `parent` self-reference/ASI trap.
+- [x] Added explicit MCP handler argument annotations to remove `noImplicitAny` failures.
+- [x] Matched Luca's current in-repo workaround for `SemanticSearch.attach` type drift by casting attach calls through `any`.
+- [x] Verified `bun run typecheck`, `bun run build`, and `bun test` pass.
+- [ ] Still recommended: centralize semantic-search setup in a helper module in Phase 2 instead of keeping repeated attach/config logic at call sites.
+
 ---
 
 ### Phase 2: Isolate optional semantic search
@@ -335,15 +344,15 @@ Launch demo should use one polished example, not many half-finished ones.
 
 Must-have before public launch:
 
-- [ ] `bun run typecheck` passes.
-- [ ] `bun run build` passes.
-- [ ] `bun test` passes.
+- [x] `bun run typecheck` passes.
+- [x] `bun run build` passes.
+- [x] `bun test` passes.
 - [ ] CLI install/run path works from a clean checkout.
 - [ ] README quickstart works copy-paste.
 - [ ] MCP server starts and exposes the documented tools/resources.
 - [ ] One create/update/validate agent workflow is demoable.
 - [ ] Semantic search is either stable or clearly marked optional/experimental.
-- [ ] No stale `dist` artifacts or duplicated tests contaminate test/build behavior.
+- [x] No stale `dist` artifacts or duplicated tests contaminate test/build behavior.
 - [ ] Package bin entries match the actual distribution strategy.
 
 Nice-to-have after launch:

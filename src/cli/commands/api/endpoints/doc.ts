@@ -173,8 +173,8 @@ ${html}
               if ('fetchAll' in rel) {
                 (result.relationships as any)[key] = rel.fetchAll().map((i: any) => ({ id: i.id, title: i.title }))
               } else if ('fetch' in rel) {
-                const parent = rel.fetch()
-                (result.relationships as any)[key] = parent ? { id: parent.id, title: parent.title } : null
+                const parentInstance = rel.fetch();
+                (result.relationships as any)[key] = parentInstance ? { id: parentInstance.id, title: parentInstance.title } : null
               }
             } catch {}
           }

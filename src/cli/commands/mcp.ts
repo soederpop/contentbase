@@ -451,7 +451,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     schema: z.object({
       model: z.string().describe('Model name or prefix'),
     }),
-    handler: (args) => {
+    handler: (args: any) => {
       const def = resolveModelDef(collection, args.model)
       if (!def) {
         return errorResult(`Unknown model: ${args.model}. Available: ${modelDefs.map((d: any) => d.name).join(', ')}`)
@@ -465,7 +465,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     schema: z.object({
       model: z.string().optional().describe('Filter by model name or prefix'),
     }),
-    handler: (args) => {
+    handler: (args: any) => {
       let ids = collection.available
 
       if (args.model) {
@@ -508,7 +508,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
         'Terminal operation (default: fetchAll)',
       ),
     }),
-    handler: async (args) => {
+    handler: async (args: any) => {
       try {
         // Backward compat: convert legacy array-style where to MongoDB-style
         let whereClause = args.where
@@ -556,7 +556,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       model: z.string().optional().describe('Limit search to a specific model'),
       caseSensitive: z.boolean().default(false).describe('Case-sensitive matching'),
     }),
-    handler: (args) => {
+    handler: (args: any) => {
       const flags = args.caseSensitive ? 'g' : 'gi'
       let regex: RegExp
       try {
@@ -607,7 +607,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       ignoreCase: z.boolean().default(false).describe('Case insensitive search'),
       maxResults: z.number().optional().describe('Limit number of results'),
     }),
-    handler: async (args) => {
+    handler: async (args: any) => {
       const grep = container.feature('grep')
       const searchPath = collection.rootPath
 
@@ -658,7 +658,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
     const { SemanticSearch } = await import('@soederpop/luca/agi')
     if (!container.features.available.includes('semanticSearch')) {
-      SemanticSearch.attach(container)
+      (SemanticSearch as any).attach(container as any)
     }
 
     const dbPath = path.join(collection.rootPath, '.contentbase/search.sqlite')
@@ -674,7 +674,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       limit: z.number().optional().default(10).describe('Maximum results to return'),
       model: z.string().optional().describe('Filter results to a specific model name'),
     }),
-    handler: async (args) => {
+    handler: async (args: any) => {
       if (!hasSearchIndex()) {
         return errorResult('No search index found. Run: cnotes embed')
       }
@@ -698,7 +698,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       limit: z.number().optional().default(10).describe('Maximum results to return'),
       model: z.string().optional().describe('Filter results to a specific model name'),
     }),
-    handler: async (args) => {
+    handler: async (args: any) => {
       if (!hasSearchIndex()) {
         return errorResult('No search index found. Run: cnotes embed')
       }
@@ -723,7 +723,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       model: z.string().optional().describe('Filter results to a specific model name'),
       where: z.record(z.string(), z.any()).optional().describe('Metadata filters, e.g. {"status": "approved"}'),
     }),
-    handler: async (args) => {
+    handler: async (args: any) => {
       if (!hasSearchIndex()) {
         return errorResult('No search index found. Run: cnotes embed')
       }
@@ -747,7 +747,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       pathId: z.string().describe('Document path ID'),
       model: z.string().optional().describe('Model name (auto-detected if omitted)'),
     }),
-    handler: (args) => {
+    handler: (args: any) => {
       const doc = collection.document(args.pathId)
       if (!doc) return errorResult(`Document not found: ${args.pathId}`)
 
@@ -772,7 +772,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       meta: z.record(z.string(), z.any()).optional().describe('Frontmatter fields to set'),
       model: z.string().optional().describe('Model name (auto-detected from pathId prefix if omitted)'),
     }),
-    handler: async (args) => {
+    handler: async (args: any) => {
       if (collection.available.includes(args.pathId)) {
         return errorResult(`Document already exists: ${args.pathId}`)
       }
@@ -813,7 +813,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       meta: z.record(z.string(), z.any()).optional().describe('Frontmatter fields to merge (existing fields are preserved unless overridden)'),
       content: z.string().optional().describe('New markdown content body (replaces everything after frontmatter)'),
     }),
-    handler: async (args) => {
+    handler: async (args: any) => {
       const doc = collection.document(args.pathId)
       if (!doc) return errorResult(`Document not found: ${args.pathId}`)
 
@@ -840,7 +840,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       action: z.enum(['replace', 'append', 'remove']).describe('What to do with the section'),
       content: z.string().optional().describe('New content (required for replace/append, ignored for remove)'),
     }),
-    handler: async (args) => {
+    handler: async (args: any) => {
       let doc = collection.document(args.pathId)
       if (!doc) return errorResult(`Document not found: ${args.pathId}`)
 
@@ -878,7 +878,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     schema: z.object({
       pathId: z.string().describe('Document path ID to delete'),
     }),
-    handler: async (args) => {
+    handler: async (args: any) => {
       if (!collection.available.includes(args.pathId)) {
         return errorResult(`Document not found: ${args.pathId}`)
       }
@@ -895,7 +895,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       name: z.string().describe('Action name'),
       args: z.array(z.any()).optional().describe('Arguments to pass to the action'),
     }),
-    handler: async (toolArgs) => {
+    handler: async (toolArgs: any) => {
       if (!collection.availableActions.includes(toolArgs.name)) {
         return errorResult(
           `Unknown action: ${toolArgs.name}. Available: ${collection.availableActions.join(', ') || '(none)'}`,
@@ -921,7 +921,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
       args: {
         title: z.string().describe('Title for the new document'),
       },
-      handler: (args) => {
+      handler: (args: any) => {
         const fields = introspectMetaSchema((def as any).meta)
         const sections = Object.entries((def as any).sections || {}).map(([key, sec]: [string, any]) => ({
           key,
@@ -966,7 +966,7 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
     args: {
       pathId: z.string().describe('Document path ID to review'),
     },
-    handler: (args) => {
+    handler: (args: any) => {
       const pathId = args.pathId
       if (!pathId) {
         return [{ role: 'user' as const, content: 'Error: pathId argument is required.' }]
