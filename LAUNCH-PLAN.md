@@ -208,7 +208,7 @@ Done when all three pass.
 - [x] Added explicit MCP handler argument annotations to remove `noImplicitAny` failures.
 - [x] Matched Luca's current in-repo workaround for `SemanticSearch.attach` type drift by casting attach calls through `any`.
 - [x] Verified `bun run typecheck`, `bun run build`, and `bun test` pass.
-- [ ] Still recommended: centralize semantic-search setup in a helper module in Phase 2 instead of keeping repeated attach/config logic at call sites.
+- [x] Centralized semantic-search setup in `src/search/luca-semantic-search.ts` during Phase 2 instead of keeping repeated attach/config logic at call sites.
 
 ---
 
@@ -223,7 +223,7 @@ Recommended changes:
    - Use it from `embed`, `search`, API endpoints, and MCP.
 
 2. Create `src/search/luca-semantic-search.ts`.
-   - Wrap all `@soederpop/luca/agi` import details.
+   - Wrap all `luca/agi` import details.
    - Own default config fields:
      - `embeddingProvider`
      - `embeddingModel`
@@ -243,6 +243,14 @@ Verification:
 - `bun run typecheck`
 - `bun test test/query.test.ts test/collection.test.ts`
 - `bun test src/__tests__/semantic-search.integration.test.ts` or the moved equivalent
+
+**Progress — 2026-05-01 (`launch-plan`):**
+
+- [x] Created `src/search/document-inputs.ts` and moved shared document input/section collection there.
+- [x] Created `src/search/luca-semantic-search.ts` to centralize search index detection, default config, Luca attachment, and initialized feature creation.
+- [x] Updated CLI, API endpoints, MCP search tools, serve auto-indexing, and integration tests to use the Contentbase helpers.
+- [x] Added `test/search-helpers.test.ts` for helper behavior without OpenAI or live embedding calls.
+- [x] Verified `bun run typecheck`, `bun run build`, and `bun test` pass.
 
 ---
 
@@ -278,6 +286,14 @@ Verification:
 - `bun test`
 - manually start MCP server if possible
 - test at least one read workflow and one mutation+validate workflow
+
+**Progress — 2026-05-01 (`launch-plan`):**
+
+- [x] Created `src/mcp/` module structure: `helpers.ts`, `readme.ts`, `model-info.ts`, `resources.ts`, `tools/query.ts`, `tools/search.ts`, `tools/mutation.ts`, `prompts.ts`, `server.ts`.
+- [x] Reduced `src/cli/commands/mcp.ts` from 1205 lines to ~85 lines (thin CLI wrapper).
+- [x] Validation tools kept in `tools/mutation.ts` alongside other mutation tools (natural grouping since validation is always called after mutations).
+- [x] `createMcpServer` exported from `src/mcp/server.ts` — importable and testable independently of the CLI.
+- [x] Verified `bun run typecheck`, `bun run build`, and `bun test` pass (250 pass, 9 skip, 0 fail).
 
 ---
 
@@ -351,7 +367,7 @@ Must-have before public launch:
 - [ ] README quickstart works copy-paste.
 - [ ] MCP server starts and exposes the documented tools/resources.
 - [ ] One create/update/validate agent workflow is demoable.
-- [ ] Semantic search is either stable or clearly marked optional/experimental.
+- [x] Semantic search is either stable or clearly marked optional/experimental.
 - [x] No stale `dist` artifacts or duplicated tests contaminate test/build behavior.
 - [ ] Package bin entries match the actual distribution strategy.
 

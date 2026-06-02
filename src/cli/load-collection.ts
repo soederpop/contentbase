@@ -138,10 +138,10 @@ export async function loadCollection(options: {
   const cwd = process.cwd();
 
   // If no container was passed, try to grab the luca singleton.
-  // This works when running inside the cnotes CLI (which imports @soederpop/luca/node).
+  // This works when running inside the cnotes CLI (which imports luca/node).
   if (!container) {
     try {
-      const luca = await import('@soederpop/luca/node');
+      const luca = await import('luca/node');
       container = luca.default;
     } catch {
       // Not running in a luca context — that's fine, native imports will be used

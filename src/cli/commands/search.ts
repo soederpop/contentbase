@@ -1,8 +1,9 @@
 import { z } from 'zod'
-import { existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { commands } from '../registry.js'
 import { loadCollection } from '../load-collection.js'
+import { collectDocumentInputs } from '../../search/document-inputs.js'
+import { getInitializedSemanticSearch, hasSearchIndex } from '../../search/luca-semantic-search.js'
 
 const argsSchema = z.object({
   mode: z.enum(['hybrid', 'keyword', 'vector']).default('hybrid'),
@@ -15,31 +16,8 @@ const argsSchema = z.object({
   contentFolder: z.string().optional(),
 })
 
-function hasSearchIndex(rootPath: string): boolean {
-  const dbDir = path.join(rootPath, '.contentbase')
-  if (!existsSync(dbDir)) return false
-  try {
-    const files = readdirSync(dbDir) as string[]
-    return files.some((f: string) => f.startsWith('search.') && f.endsWith('.sqlite'))
-  } catch {
-    return false
-  }
-}
-
-async function getSemanticSearch(container: any, rootPath: string) {
-  const { SemanticSearch } = await import('@soederpop/luca/agi')
-  if (!container.features.available.includes('semanticSearch')) {
-    (SemanticSearch as any).attach(container as any)
-  }
-
-  const dbPath = path.join(rootPath, '.contentbase/search.sqlite')
-  const ss = container.feature('semanticSearch', { dbPath })
-  await ss.initDb()
-  return ss
-}
-
 async function buildIndex(container: any, collection: any) {
-  const ss = await getSemanticSearch(container, collection.rootPath)
+  const ss = await getInitializedSemanticSearch(container, collection.rootPath)
   const docs = collectDocumentInputs(collection)
 
   const toIndex = docs.filter((doc: any) => ss.needsReindex(doc))
@@ -59,56 +37,6 @@ async function buildIndex(container: any, collection: any) {
   }
   console.error('Index ready.')
   return ss
-}
-
-function collectDocumentInputs(collection: any) {
-  const inputs: any[] = []
-  for (const pathId of collection.available) {
-    const doc = collection.document(pathId)
-    const modelDef = collection.findModelDefinition(pathId)
-
-    const sections: any[] = []
-    const lines = (doc.content as string).split('\n')
-    let currentHeading: string | null = null
-    let currentContent: string[] = []
-
-    for (const line of lines) {
-      const h2Match = line.match(/^## (.+)/)
-      if (h2Match) {
-        if (currentHeading) {
-          sections.push({
-            heading: currentHeading,
-            headingPath: currentHeading,
-            content: currentContent.join('\n').trim(),
-            level: 2,
-          })
-        }
-        currentHeading = h2Match[1].trim()
-        currentContent = []
-      } else if (currentHeading) {
-        currentContent.push(line)
-      }
-    }
-    if (currentHeading) {
-      sections.push({
-        heading: currentHeading,
-        headingPath: currentHeading,
-        content: currentContent.join('\n').trim(),
-        level: 2,
-      })
-    }
-
-    inputs.push({
-      pathId,
-      model: modelDef?.name ?? undefined,
-      title: doc.title,
-      slug: doc.slug,
-      meta: doc.meta,
-      content: doc.content,
-      sections: sections.length > 0 ? sections : undefined,
-    })
-  }
-  return inputs
 }
 
 async function handler(options: z.infer<typeof argsSchema>, { container }: { container: any }) {
@@ -140,7 +68,7 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
   if (options.bootstrap && !hasSearchIndex(collection.rootPath)) {
     ss = await buildIndex(container, collection)
   } else {
-    ss = await getSemanticSearch(container, collection.rootPath)
+    ss = await getInitializedSemanticSearch(container, collection.rootPath)
   }
 
   // Parse where clause: "key=value,key2=value2"

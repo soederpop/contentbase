@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import pathModule from 'node:path'
+import { collectDocumentInputs } from '../../../../search/document-inputs.js'
+import { getInitializedSemanticSearch } from '../../../../search/luca-semantic-search.js'
 
 export const path = '/api/search/reindex'
 export const description = 'Trigger search index rebuild'
@@ -14,14 +15,7 @@ export async function post(params: any, ctx: any) {
   const collection = ctx.container._contentbaseCollection
   const rootPath = collection.rootPath
 
-  const { SemanticSearch } = await import('@soederpop/luca/agi')
-  if (!ctx.container.features.available.includes('semanticSearch')) {
-(SemanticSearch as any).attach(ctx.container as any)
-  }
-
-  const dbPath = pathModule.join(rootPath, '.contentbase/search.sqlite')
-  const ss = ctx.container.feature('semanticSearch', { dbPath })
-  await ss.initDb()
+  const ss = await getInitializedSemanticSearch(ctx.container, rootPath)
 
   if (params.pathIds) {
     await ss.reindex(params.pathIds)
@@ -30,23 +24,10 @@ export async function post(params: any, ctx: any) {
   }
 
   // Collect and re-index documents
-  const docs: any[] = []
   const targetIds = params.pathIds || collection.available
-
-  for (const pathId of targetIds) {
-    if (!collection.available.includes(pathId)) continue
-    const doc = collection.document(pathId)
-    const modelDef = collection.findModelDefinition(pathId)
-
-    docs.push({
-      pathId,
-      model: modelDef?.name ?? undefined,
-      title: doc.title,
-      slug: doc.slug,
-      meta: doc.meta,
-      content: doc.content,
-    })
-  }
+  const targetSet = new Set(targetIds)
+  const docs = collectDocumentInputs(collection)
+    .filter((doc) => targetSet.has(doc.pathId))
 
   const toIndex = params.force ? docs : docs.filter((d: any) => ss.needsReindex(d))
 

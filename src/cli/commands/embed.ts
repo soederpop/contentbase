@@ -1,8 +1,10 @@
 import { z } from 'zod'
-import { existsSync, readdirSync, accessSync, constants as fsConstants } from 'node:fs'
+import { existsSync, accessSync, constants as fsConstants } from 'node:fs'
 import path from 'node:path'
 import { commands } from '../registry.js'
 import { loadCollection } from '../load-collection.js'
+import { collectDocumentInputs } from '../../search/document-inputs.js'
+import { createSemanticSearch, ensureSemanticSearchAttached, getInitializedSemanticSearch, hasSearchIndex, loadSemanticSearchClass } from '../../search/luca-semantic-search.js'
 
 const argsSchema = z.object({
   force: z.boolean().default(false),
@@ -12,67 +14,6 @@ const argsSchema = z.object({
   installLocal: z.boolean().default(false),
   contentFolder: z.string().optional(),
 })
-
-function hasSearchIndex(rootPath: string): boolean {
-  const dbDir = path.join(rootPath, '.contentbase')
-  if (!existsSync(dbDir)) return false
-  try {
-    const files = readdirSync(dbDir) as string[]
-    return files.some((f: string) => f.startsWith('search.') && f.endsWith('.sqlite'))
-  } catch {
-    return false
-  }
-}
-
-function collectDocumentInputs(collection: any) {
-  const inputs: any[] = []
-  for (const pathId of collection.available) {
-    const doc = collection.document(pathId)
-    const modelDef = collection.findModelDefinition(pathId)
-
-    const sections: any[] = []
-    const lines = (doc.content as string).split('\n')
-    let currentHeading: string | null = null
-    let currentContent: string[] = []
-
-    for (const line of lines) {
-      const h2Match = line.match(/^## (.+)/)
-      if (h2Match) {
-        if (currentHeading) {
-          sections.push({
-            heading: currentHeading,
-            headingPath: currentHeading,
-            content: currentContent.join('\n').trim(),
-            level: 2,
-          })
-        }
-        currentHeading = h2Match[1].trim()
-        currentContent = []
-      } else if (currentHeading) {
-        currentContent.push(line)
-      }
-    }
-    if (currentHeading) {
-      sections.push({
-        heading: currentHeading,
-        headingPath: currentHeading,
-        content: currentContent.join('\n').trim(),
-        level: 2,
-      })
-    }
-
-    inputs.push({
-      pathId,
-      model: modelDef?.name ?? undefined,
-      title: doc.title,
-      slug: doc.slug,
-      meta: doc.meta,
-      content: doc.content,
-      sections: sections.length > 0 ? sections : undefined,
-    })
-  }
-  return inputs
-}
 
 function isLocalInstalled(): boolean {
   const modulePath = path.join(process.cwd(), 'node_modules', 'node-llama-cpp')
@@ -103,10 +44,8 @@ async function installLocal(SemanticSearch: any, container: any): Promise<void> 
   console.error(`Installing node-llama-cpp@${SemanticSearch.PINNED_LLAMA_VERSION}...`)
 
   // Create a temporary instance to use the install method
-  if (!container.features.available.includes('semanticSearch')) {
-    (SemanticSearch as any).attach(container as any)
-  }
-  const ss = container.feature('semanticSearch', {
+  await ensureSemanticSearchAttached(container, SemanticSearch)
+  const ss = await createSemanticSearch(container, cwd, {
     dbPath: path.join(cwd, '.contentbase/search.sqlite'),
     embeddingProvider: 'local',
   })
@@ -138,7 +77,7 @@ function detectInstallCommand(cwd: string, version: string): string {
 }
 
 async function handler(options: z.infer<typeof argsSchema>, { container }: { container: any }) {
-  const { SemanticSearch } = await import('@soederpop/luca/agi')
+  const SemanticSearch = await loadSemanticSearchClass()
 
   // --install-local: install node-llama-cpp only, then exit
   if (options.installLocal) {
@@ -171,15 +110,9 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
       return
     }
 
-    if (!container.features.available.includes('semanticSearch')) {
-      (SemanticSearch as any).attach(container as any)
-    }
-    const dbPath = path.join(collection.rootPath, '.contentbase/search.sqlite')
-    const ss = container.feature('semanticSearch', {
-      dbPath,
+    const ss = await getInitializedSemanticSearch(container, collection.rootPath, {
       embeddingProvider: provider,
     })
-    await ss.initDb()
 
     const stats = ss.getStats()
     console.log('Search Index Status')
@@ -206,15 +139,9 @@ async function handler(options: z.infer<typeof argsSchema>, { container }: { con
   }
 
   // Embed / re-embed
-  if (!container.features.available.includes('semanticSearch')) {
-    (SemanticSearch as any).attach(container as any)
-  }
-  const dbPath = path.join(collection.rootPath, '.contentbase/search.sqlite')
-  const ss = container.feature('semanticSearch', {
-    dbPath,
+  const ss = await getInitializedSemanticSearch(container, collection.rootPath, {
     embeddingProvider: provider,
   })
-  await ss.initDb()
 
   const docs = collectDocumentInputs(collection)
   const startTime = Date.now()
