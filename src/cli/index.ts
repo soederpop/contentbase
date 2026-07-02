@@ -12,7 +12,7 @@ async function renderMarkdown(container: any, text: string) {
 
 async function main() {
   // Dynamic import so the library stays luca-free; only the CLI pulls it in
-  const luca = await import('@soederpop/luca/node')
+  const luca = await import('luca/node')
   const container = luca.default
 
   const commandName = container.argv._[0] as string | undefined

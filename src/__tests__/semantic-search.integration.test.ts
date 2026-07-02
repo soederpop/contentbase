@@ -14,6 +14,7 @@ import path from "path";
 import fs from "fs/promises";
 import { existsSync } from "fs";
 import { Collection } from "../../src/collection";
+import { collectDocumentInputs } from "../search/document-inputs";
 
 const dir = import.meta.dirname ?? new URL(".", import.meta.url).pathname;
 const FIXTURES_PATH = path.resolve(dir, "../../test/fixtures/sdlc");
@@ -21,56 +22,6 @@ const DB_DIR = path.join(FIXTURES_PATH, ".contentbase-test");
 const DB_PATH = path.join(DB_DIR, "search.sqlite");
 
 const HAS_API_KEY = !!process.env.OPENAI_API_KEY;
-
-function collectDocumentInputs(collection: Collection) {
-  const inputs: any[] = [];
-  for (const pathId of collection.available) {
-    const doc = collection.document(pathId);
-    const modelDef = (collection as any).findModelDefinition?.(pathId);
-
-    const sections: any[] = [];
-    const lines = doc.content.split("\n");
-    let currentHeading: string | null = null;
-    let currentContent: string[] = [];
-
-    for (const line of lines) {
-      const h2Match = line.match(/^## (.+)/);
-      if (h2Match) {
-        if (currentHeading) {
-          sections.push({
-            heading: currentHeading,
-            headingPath: currentHeading,
-            content: currentContent.join("\n").trim(),
-            level: 2,
-          });
-        }
-        currentHeading = h2Match[1].trim();
-        currentContent = [];
-      } else if (currentHeading) {
-        currentContent.push(line);
-      }
-    }
-    if (currentHeading) {
-      sections.push({
-        heading: currentHeading,
-        headingPath: currentHeading,
-        content: currentContent.join("\n").trim(),
-        level: 2,
-      });
-    }
-
-    inputs.push({
-      pathId,
-      model: modelDef?.name ?? undefined,
-      title: doc.title,
-      slug: (doc as any).slug,
-      meta: doc.meta,
-      content: doc.content,
-      sections: sections.length > 0 ? sections : undefined,
-    });
-  }
-  return inputs;
-}
 
 describe("Semantic Search Integration", () => {
   let collection: Collection;
@@ -88,7 +39,7 @@ describe("Semantic Search Integration", () => {
     await collection.load();
 
     // Import SemanticSearch
-    const mod = await import("@soederpop/luca/agi");
+    const mod = await import("luca/agi");
     SemanticSearchClass = mod.SemanticSearch;
 
     // Clean up any previous test index
@@ -187,7 +138,7 @@ describe("Semantic Search Integration", () => {
   describe("Full Pipeline (requires OPENAI_API_KEY)", () => {
     it.skipIf(!HAS_API_KEY)("indexes documents and generates embeddings", async () => {
       // Create a container-like environment for SemanticSearch
-      const container = (await import("@soederpop/luca")).default;
+      const container = (await import("luca")).default;
 
       if (!container.features.available.includes("semanticSearch")) {
         SemanticSearchClass.attach(container);
@@ -261,7 +212,7 @@ describe("Semantic Search Integration", () => {
 
     it.skipIf(!HAS_API_KEY)("search with no index throws actionable error", async () => {
       // Create a fresh instance with different dbPath
-      const container = (await import("@soederpop/luca")).default;
+      const container = (await import("luca")).default;
       const freshSs = container.feature("semanticSearch", {
         dbPath: path.join(DB_DIR, "nonexistent.sqlite"),
         embeddingProvider: "openai",

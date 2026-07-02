@@ -5,6 +5,8 @@ import { commands } from '../registry.js'
 import { loadCollection } from '../load-collection.js'
 import { buildSchemaJSON } from './api/helpers.js'
 import { builtinEndpoints } from './api/endpoints/index.js'
+import { collectDocumentInputs } from '../../search/document-inputs.js'
+import { getInitializedSemanticSearch, hasSearchIndex } from '../../search/luca-semantic-search.js'
 
 const argsSchema = z.object({
   port: z.number().default(8000),
@@ -184,39 +186,12 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
   // Search index auto-update
   // ---------------------------------------------------------------------------
   if (options.search) {
-    const { existsSync, readdirSync } = await import('node:fs')
-    const dbDir = path.join(collection.rootPath, '.contentbase')
-    const hasIndex = existsSync(dbDir) && (() => {
+    if (hasSearchIndex(collection.rootPath)) {
       try {
-        return (readdirSync(dbDir) as string[]).some((f: string) => f.startsWith('search.') && f.endsWith('.sqlite'))
-      } catch { return false }
-    })()
-
-    if (hasIndex) {
-      try {
-        const { SemanticSearch } = await import('@soederpop/luca/agi')
-        if (!container.features.available.includes('semanticSearch')) {
-          SemanticSearch.attach(container)
-        }
-        const dbPath = path.join(collection.rootPath, '.contentbase/search.sqlite')
-        const ss = container.feature('semanticSearch', { dbPath }) as any
-        await ss.initDb()
-
-        // Collect document inputs
-        const docs: any[] = []
-        for (const pathId of collection.available) {
-          const doc = collection.document(pathId) as any
-          docs.push({
-            pathId,
-            model: collection.findModelDefinition(pathId)?.name ?? undefined,
-            title: doc.title,
-            meta: doc.meta,
-            content: doc.content,
-          })
-        }
-
-        const stale = docs.filter((d: any) => ss.needsReindex(d))
-        ss.removeStale(docs.map((d: any) => d.pathId))
+        const ss = await getInitializedSemanticSearch(container, collection.rootPath)
+        const docs = collectDocumentInputs(collection)
+        const stale = docs.filter((d) => ss.needsReindex(d))
+        ss.removeStale(docs.map((d) => d.pathId))
 
         if (stale.length > 0) {
           console.log(`[search] Updating ${stale.length} stale document(s)...`)

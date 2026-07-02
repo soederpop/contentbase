@@ -1,6 +1,5 @@
 import { z } from 'zod'
-import pathModule from 'node:path'
-import { existsSync, readdirSync } from 'node:fs'
+import { getInitializedSemanticSearch, hasSearchIndex } from '../../../../search/luca-semantic-search.js'
 
 export const path = '/api/search/status'
 export const description = 'Search index health and statistics'
@@ -11,16 +10,7 @@ export const getSchema = z.object({})
 export async function get(_params: any, ctx: any) {
   const collection = ctx.container._contentbaseCollection
   const rootPath = collection.rootPath
-  const dbDir = pathModule.join(rootPath, '.contentbase')
-
-  const hasIndex = existsSync(dbDir) && (() => {
-    try {
-      const files = readdirSync(dbDir) as string[]
-      return files.some((f: string) => f.startsWith('search.') && f.endsWith('.sqlite'))
-    } catch {
-      return false
-    }
-  })()
+  const hasIndex = hasSearchIndex(rootPath)
 
   if (!hasIndex) {
     return {
@@ -37,14 +27,7 @@ export async function get(_params: any, ctx: any) {
     }
   }
 
-  const { SemanticSearch } = await import('@soederpop/luca/agi')
-  if (!ctx.container.features.available.includes('semanticSearch')) {
-    SemanticSearch.attach(ctx.container)
-  }
-
-  const dbPath = pathModule.join(rootPath, '.contentbase/search.sqlite')
-  const ss = ctx.container.feature('semanticSearch', { dbPath })
-  await ss.initDb()
+  const ss = await getInitializedSemanticSearch(ctx.container, rootPath)
 
   const stats = ss.getStats()
   return {

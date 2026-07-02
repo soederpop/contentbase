@@ -2,7 +2,7 @@ CLAUDE.md
 .claude
 .env
 .mcp.json
-dist/
+dist/cnotes-*
 bun.lock
 test/
 src/__tests__/
