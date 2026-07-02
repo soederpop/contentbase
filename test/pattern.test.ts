@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { matchPattern, matchPatterns } from "../src/utils/match-pattern";
 import { defineModel, z } from "../src/index";
 import { createModelInstance } from "../src/model-instance";

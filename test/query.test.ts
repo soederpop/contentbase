@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { QueryBuilder } from "../src/query/query-builder";
 import { operators } from "../src/query/operators";
 import { Collection } from "../src/collection";

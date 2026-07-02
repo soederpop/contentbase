@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { Collection } from "../src/collection";
 import { createTestCollection, FIXTURES_PATH } from "./helpers";
 

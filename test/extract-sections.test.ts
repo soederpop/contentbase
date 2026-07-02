@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { toString } from "mdast-util-to-string";
 import type { Heading } from "mdast";
 import { Collection } from "../src/collection";

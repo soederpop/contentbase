@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import fs from "fs/promises";
 import path from "path";
 import { Collection } from "../src/collection";

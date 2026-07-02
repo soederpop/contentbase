@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { section } from "../src/section";
 import { Collection } from "../src/collection";
 import { createModelInstance } from "../src/model-instance";

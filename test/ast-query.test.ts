@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { AstQuery } from "../src/ast-query";
 import { Collection } from "../src/collection";
 import { createTestCollection } from "./helpers";
