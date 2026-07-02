@@ -1,6 +1,6 @@
 {
   "name": "contentbase",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "repository": "https://github.com/soederpop/contentbase",
   "website": "https://contentbase.soederpop.com",
   "type": "module",
@@ -11,8 +11,8 @@
     "contentbase": "./src/cli/index.ts"
   },
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
     "build": "find dist -name '*.d.ts' -o -name '*.d.ts.map' -o -name '*.js' -o -name '*.js.map' | xargs rm -f 2>/dev/null; tsc",
     "typecheck": "tsc --noEmit",
     "examples": "bun run scripts/examples/run-all.ts",

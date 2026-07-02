@@ -17,24 +17,34 @@ import type { Root, Content, RootContent, Heading } from "mdast";
 import type { Collection } from "./collection";
 
 export interface DocumentOptions {
-  id: string;
+  /** Document id. Optional for standalone documents — derived from `path` or defaults to "untitled". */
+  id?: string;
   content: string;
   meta?: Record<string, unknown>;
-  collection: Collection;
+  /** Owning collection. Omit (or pass null) to create a standalone in-memory document. */
+  collection?: Collection | null;
+  /** Explicit file path. Used as-is by the `path` getter for standalone documents. */
+  path?: string;
   ast?: Root;
 }
 
 export class Document {
   readonly id: string;
-  readonly collection: Collection;
+  readonly collection: Collection | null;
 
   #content: string;
   #meta: Record<string, unknown>;
   #ast: Root | null;
+  #path: string | null;
 
   constructor(options: DocumentOptions) {
-    this.id = options.id;
-    this.collection = options.collection;
+    this.id =
+      options.id ??
+      (options.path
+        ? options.path.replace(/\.mdx?$/, "").split("/").filter(Boolean).pop()!
+        : "untitled");
+    this.collection = options.collection ?? null;
+    this.#path = options.path ?? null;
     this.#content = options.content;
     this.#meta = options.meta ?? {};
     this.#ast = options.ast ?? null;
@@ -68,15 +78,15 @@ export class Document {
   }
 
   get createdAt(): Date | undefined {
-    return this.collection.items.get(this.id)?.createdAt;
+    return this.collection?.items.get(this.id)?.createdAt;
   }
 
   get updatedAt(): Date | undefined {
-    return this.collection.items.get(this.id)?.updatedAt;
+    return this.collection?.items.get(this.id)?.updatedAt;
   }
 
   get size(): number | undefined {
-    return this.collection.items.get(this.id)?.size;
+    return this.collection?.items.get(this.id)?.size;
   }
 
   get rawContent(): string {
@@ -88,6 +98,8 @@ export class Document {
   }
 
   get path(): string {
+    if (this.#path) return this.#path;
+    if (!this.collection) return `${this.id}.md`;
     return this.collection.resolve(this.id) + ".md";
   }
 
@@ -512,6 +524,9 @@ export class Document {
   async save(
     options: { normalize?: boolean; extension?: string } = {}
   ): Promise<this> {
+    if (!this.collection) {
+      throw new Error("Cannot save a standalone document — it has no collection");
+    }
     if (options.normalize !== false) {
       this.normalizeHeadings();
     }
@@ -523,6 +538,9 @@ export class Document {
   }
 
   async reload(): Promise<this> {
+    if (!this.collection) {
+      throw new Error("Cannot reload a standalone document — it has no collection");
+    }
     const item = await this.collection.readItem(this.id);
     this.#content = item.content;
     this.#meta = item.meta;
