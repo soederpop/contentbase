@@ -57,6 +57,13 @@ describe("Collection", () => {
     expect(collection.modelDefinitions.length).toBe(3);
   });
 
+  it("defines and registers a model in one call", () => {
+    const Note = collection.defineModel("Note", { prefix: "notes" });
+    expect(Note.name).toBe("Note");
+    expect(Note.prefix).toBe("notes");
+    expect(collection.getModelDefinition("Note")).toBe(Note);
+  });
+
   it("finds model definition by pathId prefix", () => {
     const def = collection.findModelDefinition("epics/authentication");
     expect(def?.name).toBe("Epic");

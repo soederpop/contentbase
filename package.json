@@ -1,6 +1,6 @@
 {
   "name": "contentbase",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "repository": "https://github.com/soederpop/contentbase",
   "website": "https://contentbase.soederpop.com",
   "type": "module",
@@ -21,7 +21,7 @@
     "release": "./scripts/release.sh"
   },
   "dependencies": {
-    "luca": ">= 3.0.2",
+    "luca": ">= 3.3.0",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "mdast-util-gfm": "^3.1.0",

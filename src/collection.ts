@@ -7,6 +7,8 @@ import { createModelInstance } from "./model-instance";
 import { pluralize } from "./utils/inflect";
 import { Base } from "./base-model";
 import { NodeStorageAdapter } from "./adapters/node-fs";
+import { defineModel, type DefineModelConfig } from "./define-model";
+import type { z } from "zod";
 import type {
   ModelDefinition,
   CollectionItem,
@@ -14,6 +16,7 @@ import type {
   InferModelInstance,
   HasManyDefinition,
   RelationshipDefinition,
+  SectionDefinition,
   StorageAdapter,
 } from "./types";
 
@@ -145,6 +148,34 @@ export class Collection {
   ): this {
     this.#models.set(definition.name, definition);
     return this;
+  }
+
+  /**
+   * Define a model and register it with this collection in one call.
+   * Returns the ModelDefinition (with full type inference), not the collection.
+   */
+  defineModel<
+    TName extends string,
+    TMeta extends z.ZodType = z.ZodObject<{}, z.core.$loose>,
+    TSections extends Record<string, SectionDefinition<any>> = Record<
+      string,
+      never
+    >,
+    TRelationships extends Record<
+      string,
+      RelationshipDefinition<any>
+    > = Record<string, never>,
+    TComputed extends Record<string, (self: any) => any> = Record<
+      string,
+      never
+    >,
+  >(
+    name: TName,
+    config?: DefineModelConfig<TMeta, TSections, TRelationships, TComputed>
+  ): ModelDefinition<TName, TMeta, TSections, TRelationships, TComputed> {
+    const definition = defineModel(name, config);
+    this.register(definition);
+    return definition;
   }
 
   /** Get a model definition by name */
