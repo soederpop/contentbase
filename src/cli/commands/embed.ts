@@ -4,7 +4,7 @@ import path from 'node:path'
 import { commands } from '../registry.js'
 import { loadCollection } from '../load-collection.js'
 import { collectDocumentInputs } from '../../search/document-inputs.js'
-import { createSemanticSearch, ensureSemanticSearchAttached, getInitializedSemanticSearch, hasSearchIndex, loadSemanticSearchClass } from '../../search/luca-semantic-search.js'
+import { createSemanticSearch, ensureSemanticSearchAttached, getInitializedSemanticSearch, hasSearchIndex, loadSemanticSearchClass } from '../../search/semantic-search.js'
 
 const argsSchema = z.object({
   force: z.boolean().default(false),

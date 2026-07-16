@@ -99,22 +99,17 @@ async function autoDiscoverModels(collection: Collection): Promise<number> {
   return registered;
 }
 
-/** Seed the luca VM with contentbase and common deps so models.ts can resolve imports */
+/** Seed the VM with contentbase and common deps so models.ts can resolve imports */
 function seedContentbaseModules(container: any): void {
   const vm = container.feature('vm')
 
-  // Seed luca modules first
-  const helpers = container.feature('helpers')
-  if (helpers?.seedVirtualModules) {
-    helpers.seedVirtualModules()
-  }
-
   vm.defineModule('contentbase', contentbaseExports)
+  try { vm.defineModule('zod', require('zod')) } catch {}
   try { vm.defineModule('js-yaml', require('js-yaml')) } catch {}
   try { vm.defineModule('mdast-util-to-string', require('mdast-util-to-string')) } catch {}
 }
 
-/** Build a VM-backed module loader using the luca container */
+/** Build a VM-backed module loader using the runtime container */
 function createVmModuleLoader(container: any): (filePath: string) => Record<string, any> {
   let seeded = false
   return (filePath: string) => {
@@ -137,14 +132,14 @@ export async function loadCollection(options: {
 
   const cwd = process.cwd();
 
-  // If no container was passed, try to grab the luca singleton.
-  // This works when running inside the cnotes CLI (which imports luca/node).
+  // If no container was passed, grab the shared runtime container singleton.
+  // This works when running inside the cnotes CLI.
   if (!container) {
     try {
-      const luca = await import('luca/node');
-      container = luca.default;
+      const { getContainer } = await import('../runtime/container.js');
+      container = getContainer();
     } catch {
-      // Not running in a luca context — that's fine, native imports will be used
+      // Runtime unavailable — that's fine, native imports will be used
     }
   }
 

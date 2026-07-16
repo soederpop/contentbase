@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { getInitializedSemanticSearch, hasSearchIndex } from '../../../../search/luca-semantic-search.js'
+import { getInitializedSemanticSearch, hasSearchIndex } from '../../../../search/semantic-search.js'
 
 export const path = '/api/search/status'
 export const description = 'Search index health and statistics'

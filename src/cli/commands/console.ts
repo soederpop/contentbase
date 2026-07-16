@@ -93,7 +93,7 @@ cnotes console [options]
 The REPL has these variables available:
 
 - \`collection\` — The loaded Collection instance
-- All luca container features (fs, ui, grep, etc.)
+- All container features (fs, ui, grep, etc.)
 - Exports from \`cnotes.console.ts\` if present in the project root
 
 ## Custom Console Module

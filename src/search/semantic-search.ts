@@ -51,20 +51,19 @@ export function buildSemanticSearchConfig(rootPath: string, options: SemanticSea
 }
 
 export async function loadSemanticSearchClass(): Promise<any> {
-  const { SemanticSearch } = await import('luca/agi')
+  const { SemanticSearch } = await import('../runtime/features/semantic-search.js')
   return SemanticSearch
 }
 
-export async function ensureSemanticSearchAttached(container: any, SemanticSearchClass?: any): Promise<any> {
-  const SemanticSearch = SemanticSearchClass ?? await loadSemanticSearchClass()
-  if (!container.features.available.includes('semanticSearch')) {
-    ;(SemanticSearch as any).attach(container as any)
-  }
-  return SemanticSearch
+/**
+ * The runtime container registers the semanticSearch feature automatically,
+ * so attaching is a no-op kept for API compatibility.
+ */
+export async function ensureSemanticSearchAttached(_container: any, SemanticSearchClass?: any): Promise<any> {
+  return SemanticSearchClass ?? await loadSemanticSearchClass()
 }
 
 export async function createSemanticSearch(container: any, rootPath: string, options: SemanticSearchOptions = {}): Promise<any> {
-  await ensureSemanticSearchAttached(container)
   return container.feature('semanticSearch', buildSemanticSearchConfig(rootPath, options))
 }
 

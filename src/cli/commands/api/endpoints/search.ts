@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { getInitializedSemanticSearch, hasSearchIndex } from '../../../../search/luca-semantic-search.js'
+import { getInitializedSemanticSearch, hasSearchIndex } from '../../../../search/semantic-search.js'
 
 export const path = '/api/search'
 export const description = 'Search across collection documents using keyword, semantic, or hybrid modes'

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { collectDocumentInputs } from '../../../../search/document-inputs.js'
-import { getInitializedSemanticSearch } from '../../../../search/luca-semantic-search.js'
+import { getInitializedSemanticSearch } from '../../../../search/semantic-search.js'
 
 export const path = '/api/search/reindex'
 export const description = 'Trigger search index rebuild'

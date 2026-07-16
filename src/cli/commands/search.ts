@@ -3,7 +3,7 @@ import path from 'node:path'
 import { commands } from '../registry.js'
 import { loadCollection } from '../load-collection.js'
 import { collectDocumentInputs } from '../../search/document-inputs.js'
-import { getInitializedSemanticSearch, hasSearchIndex } from '../../search/luca-semantic-search.js'
+import { getInitializedSemanticSearch, hasSearchIndex } from '../../search/semantic-search.js'
 
 const argsSchema = z.object({
   mode: z.enum(['hybrid', 'keyword', 'vector']).default('hybrid'),

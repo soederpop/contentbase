@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { collectDocumentInputs, collectH2Sections } from '../src/search/document-inputs'
-import { buildSemanticSearchConfig, hasSearchIndex } from '../src/search/luca-semantic-search'
+import { buildSemanticSearchConfig, hasSearchIndex } from '../src/search/semantic-search'
 
 describe('search helpers', () => {
   it('extracts h2 sections for semantic search document inputs', () => {

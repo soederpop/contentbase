@@ -39,7 +39,7 @@ describe("Semantic Search Integration", () => {
     await collection.load();
 
     // Import SemanticSearch
-    const mod = await import("luca/agi");
+    const mod = await import("../runtime/features/semantic-search");
     SemanticSearchClass = mod.SemanticSearch;
 
     // Clean up any previous test index
@@ -138,11 +138,8 @@ describe("Semantic Search Integration", () => {
   describe("Full Pipeline (requires OPENAI_API_KEY)", () => {
     it.skipIf(!HAS_API_KEY)("indexes documents and generates embeddings", async () => {
       // Create a container-like environment for SemanticSearch
-      const container = (await import("luca")).default;
-
-      if (!container.features.available.includes("semanticSearch")) {
-        SemanticSearchClass.attach(container);
-      }
+      const { getContainer } = await import("../runtime/container");
+      const container = getContainer();
 
       ss = container.feature("semanticSearch", {
         dbPath: DB_PATH,
@@ -212,7 +209,8 @@ describe("Semantic Search Integration", () => {
 
     it.skipIf(!HAS_API_KEY)("search with no index throws actionable error", async () => {
       // Create a fresh instance with different dbPath
-      const container = (await import("luca")).default;
+      const { getContainer } = await import("../runtime/container");
+      const container = getContainer();
       const freshSs = container.feature("semanticSearch", {
         dbPath: path.join(DB_DIR, "nonexistent.sqlite"),
         embeddingProvider: "openai",

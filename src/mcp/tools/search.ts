@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { errorResult, textResult } from '../helpers.js'
 import { resolveModelDef } from '../../cli/commands/api/helpers.js'
-import { getInitializedSemanticSearch, hasSearchIndex as searchIndexExists } from '../../search/luca-semantic-search.js'
+import { getInitializedSemanticSearch, hasSearchIndex as searchIndexExists } from '../../search/semantic-search.js'
 
 export function registerSearchTools(mcpServer: any, collection: any, container: any) {
   let _semanticSearch: any = null

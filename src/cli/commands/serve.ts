@@ -6,7 +6,7 @@ import { loadCollection } from '../load-collection.js'
 import { buildSchemaJSON } from './api/helpers.js'
 import { builtinEndpoints } from './api/endpoints/index.js'
 import { collectDocumentInputs } from '../../search/document-inputs.js'
-import { getInitializedSemanticSearch, hasSearchIndex } from '../../search/luca-semantic-search.js'
+import { getInitializedSemanticSearch, hasSearchIndex } from '../../search/semantic-search.js'
 
 const argsSchema = z.object({
   port: z.number().default(8000),
