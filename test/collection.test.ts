@@ -151,6 +151,44 @@ describe("Collection", () => {
     });
   });
 
+  describe("readItem cache poisoning (gray-matter)", () => {
+    let tmpDir: string;
+    let tmpCollection: Collection;
+    let filePath: string;
+
+    beforeEach(async () => {
+      tmpDir = await fs.mkdtemp(path.join(import.meta.dirname, ".tmp-poison-"));
+      await fs.mkdir(path.join(tmpDir, "epics"), { recursive: true });
+      filePath = path.join(tmpDir, "epics", "one.mdx");
+      await fs.writeFile(
+        filePath,
+        "---\nstatus: approved\n---\n# One\n"
+      );
+
+      tmpCollection = new Collection({ rootPath: tmpDir });
+      tmpCollection.register(Epic);
+      await tmpCollection.load();
+    });
+
+    afterEach(async () => {
+      await fs.rm(tmpDir, { recursive: true });
+    });
+
+    it("does not leak mutations to doc.meta into later reads of unchanged files", async () => {
+      const first = await tmpCollection.readItem("epics/one");
+      expect(first.meta.status).toBe("approved");
+
+      // Simulate the normal, documented usage pattern of mutating doc.meta directly.
+      first.meta.status = "pending";
+
+      // Re-read the same file with no changes on disk.
+      const second = await tmpCollection.readItem("epics/one");
+
+      // The fresh read must reflect on-disk content, not the earlier mutation.
+      expect(second.meta.status).toBe("approved");
+    });
+  });
+
   describe("generateModelSummary", () => {
     let tmpDir: string;
     let tmpCollection: Collection;

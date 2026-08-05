@@ -62,7 +62,7 @@ export async function parse(input: string): Promise<ParsedDocument> {
     raw = input;
   }
 
-  const { data: meta, content } = matter(raw);
+  const { data: meta, content } = matter(raw, { cache: false });
   const ast = processor.parse(content);
   const astQuery = new AstQuery(ast);
   const nodes = new NodeShortcuts(astQuery);

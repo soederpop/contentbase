@@ -301,7 +301,7 @@ export class Collection {
         if (pathId.startsWith("templates/") || pathId === "templates") return;
 
         const raw = await this.#adapter.readFile(key);
-        const { data, content } = matter(raw);
+        const { data, content } = matter(raw, { cache: false });
 
         this.#items.set(pathId, {
           raw,
@@ -467,7 +467,7 @@ export class Collection {
         `Use doc.save() or pass the full raw content including frontmatter.`
       );
     }
-    const { data, content } = matter(options.content);
+    const { data, content } = matter(options.content, { cache: false });
 
     if (!this.#items.has(pathId)) {
       const filePath = this.resolve(`${pathId}${extension}`);
@@ -524,7 +524,7 @@ export class Collection {
 
     const raw = await this.#adapter.readFile(filePath);
     const stat = await this.#adapter.stat(filePath);
-    const { data, content } = matter(raw);
+    const { data, content } = matter(raw, { cache: false });
 
     const item: CollectionItem = {
       raw,
