@@ -19,13 +19,18 @@ export const operators: Record<
 > = {
   eq: (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b),
   neq: (a, b) => !operators.eq(a, b),
-  in: (a, b) => Array.isArray(b) && b.includes(a),
-  notIn: (a, b) => Array.isArray(b) && !b.includes(a),
+  // For array-valued fields (e.g. tags), "in" means overlap: any element in the list
+  in: (a, b) =>
+    Array.isArray(b) &&
+    (Array.isArray(a) ? a.some((x) => b.includes(x)) : b.includes(a)),
+  notIn: (a, b) => Array.isArray(b) && !operators.in(a, b),
   gt: (a, b) => a > b,
   lt: (a, b) => a < b,
   gte: (a, b) => a >= b,
   lte: (a, b) => a <= b,
-  contains: (a, b) => typeof a === "string" && a.includes(b),
+  // Strings: substring. Arrays: membership (tags contains "urgent")
+  contains: (a, b) =>
+    typeof a === "string" ? a.includes(b) : Array.isArray(a) && a.includes(b),
   startsWith: (a, b) => typeof a === "string" && a.startsWith(b),
   endsWith: (a, b) => typeof a === "string" && a.endsWith(b),
   regex: (a, b) =>

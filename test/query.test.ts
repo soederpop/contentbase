@@ -92,6 +92,17 @@ describe("operators", () => {
     expect(operators.notIn("a", ["a", "b"])).toBe(false);
   });
 
+  it("in treats array-valued fields as overlap (tags)", () => {
+    expect(operators.in(["urgent", "bug"], ["bug", "feature"])).toBe(true);
+    expect(operators.in(["urgent", "bug"], ["feature"])).toBe(false);
+    expect(operators.in([], ["a"])).toBe(false);
+  });
+
+  it("notIn on array-valued fields means no overlap", () => {
+    expect(operators.notIn(["urgent"], ["bug", "feature"])).toBe(true);
+    expect(operators.notIn(["urgent", "bug"], ["bug"])).toBe(false);
+  });
+
   it("gt/lt/gte/lte compare values", () => {
     expect(operators.gt(5, 3)).toBe(true);
     expect(operators.lt(3, 5)).toBe(true);
@@ -102,6 +113,12 @@ describe("operators", () => {
   it("contains checks string inclusion", () => {
     expect(operators.contains("hello world", "world")).toBe(true);
     expect(operators.contains("hello", "world")).toBe(false);
+  });
+
+  it("contains checks array membership for array-valued fields", () => {
+    expect(operators.contains(["urgent", "bug"], "bug")).toBe(true);
+    expect(operators.contains(["urgent"], "bug")).toBe(false);
+    expect(operators.contains(42, "4")).toBe(false);
   });
 
   it("startsWith/endsWith check string prefixes/suffixes", () => {
