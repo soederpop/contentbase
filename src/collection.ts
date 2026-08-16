@@ -282,9 +282,12 @@ export class Collection {
       this.register(Base);
     }
 
-    if (this.#loaded && refresh) {
-      this.#items.clear();
-    }
+    // On refresh, build into a fresh map and swap it in at the end so
+    // concurrent reads never observe a half-loaded (or empty) collection
+    const target =
+      this.#loaded && refresh
+        ? new Map<string, CollectionItem>()
+        : this.#items;
 
     const extensionPattern = new RegExp(
       `\\.(${this.extensions.join("|")})$`,
@@ -303,7 +306,7 @@ export class Collection {
         const raw = await this.#adapter.readFile(key);
         const { data, content } = matter(raw, { cache: false });
 
-        this.#items.set(pathId, {
+        target.set(pathId, {
           raw,
           content,
           meta: data,
@@ -317,6 +320,7 @@ export class Collection {
 
     // Refresh any already-created documents
     if (this.#loaded && refresh) {
+      this.#items = target;
       // Evict documents that no longer exist on disk
       for (const [pathId] of this.#documents) {
         if (!this.#items.has(pathId)) {

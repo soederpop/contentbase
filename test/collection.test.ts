@@ -134,6 +134,19 @@ describe("Collection", () => {
       await fs.rm(tmpDir, { recursive: true });
     });
 
+    it("keeps items readable while a refresh is in flight", async () => {
+      expect(tmpCollection.available.length).toBe(2);
+
+      const reloadPromise = tmpCollection.load({ refresh: true });
+      // Query mid-reload: must see the old snapshot, never an empty one
+      const during = await tmpCollection.query(Epic).fetchAll();
+      await reloadPromise;
+      const after = await tmpCollection.query(Epic).fetchAll();
+
+      expect(during.length).toBe(2);
+      expect(after.length).toBe(2);
+    });
+
     it("evicts cached documents whose files were deleted", async () => {
       // Access a document so it's in the #documents cache
       const doc = tmpCollection.document("epics/one");
