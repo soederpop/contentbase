@@ -2,6 +2,7 @@ import { z } from "zod";
 import { pluralize } from "./utils/inflect";
 import type {
   ModelDefinition,
+  ModelHooks,
   SectionDefinition,
   RelationshipDefinition,
   DocumentRef,
@@ -32,6 +33,8 @@ export interface DefineModelConfig<
   exclude?: (string | RegExp)[];
   /** When true, documents are not required to have an H1 title */
   titleOptional?: boolean;
+  /** Lifecycle hooks — see ModelHooks in types.ts. */
+  hooks?: ModelHooks<any>;
 }
 
 /**
@@ -92,6 +95,7 @@ export function defineModel<
     pattern: config.pattern,
     exclude: config.exclude,
     titleOptional: config.titleOptional,
+    hooks: config.hooks,
   };
 
   // description is lazy — computed on first access if not provided by the user.

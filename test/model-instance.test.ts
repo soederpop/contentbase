@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 import { Collection } from "../src/collection";
 import { createModelInstance } from "../src/model-instance";
+import { defineModel } from "../src/define-model";
+import { z } from "zod";
 import { createTestCollection } from "./helpers";
 import { Epic, Story } from "./fixtures/sdlc/models";
 
@@ -192,6 +194,102 @@ describe("createModelInstance", () => {
       const json = instance.toJSON({ related: ["stories"] });
       expect(json.stories).toBeDefined();
       expect(Array.isArray(json.stories)).toBe(true);
+    });
+  });
+
+  describe("hooks", () => {
+    // Build a hook-equipped Epic-shape model; write in save() is stubbed
+    // so fixtures on disk are untouched.
+    function EpicWithHooks(hooks: any) {
+      return defineModel("Epic", {
+        prefix: "epics",
+        meta: z.object({
+          status: z.enum(["created", "in-progress", "complete"]).default("created"),
+        }),
+        defaults: { status: "created" },
+        hooks,
+      });
+    }
+
+    it("beforeSave fires and can mutate document.meta", async () => {
+      let called = 0;
+      const model = EpicWithHooks({
+        beforeSave(instance: any) {
+          called++;
+          if (instance.document.meta.status === "done") {
+            instance.document.meta.status = "complete";
+          }
+        },
+      });
+      const doc = collection.createDocument({
+        id: "epics/hook-before",
+        content: "# Hook Before\n",
+        meta: { status: "done" },
+      });
+      const instance = createModelInstance(doc, model, collection);
+      // Stub the file write so this stays a pure-in-memory test
+      (doc as any).save = async () => doc;
+      await instance.save();
+      expect(called).toBe(1);
+      expect(doc.meta.status).toBe("complete");
+    });
+
+    it("afterSave fires after the write", async () => {
+      const order: string[] = [];
+      const model = EpicWithHooks({
+        beforeSave: () => { order.push("before"); },
+        afterSave: () => { order.push("after"); },
+      });
+      const doc = collection.createDocument({
+        id: "epics/hook-order",
+        content: "# Order\n",
+        meta: { status: "created" },
+      });
+      const instance = createModelInstance(doc, model, collection);
+      (doc as any).save = async () => { order.push("write"); return doc; };
+      await instance.save();
+      expect(order).toEqual(["before", "write", "after"]);
+    });
+
+    it("onValidationError can fix meta and re-validation passes", async () => {
+      let called = 0;
+      const model = EpicWithHooks({
+        onValidationError(instance: any) {
+          called++;
+          const fixes: Record<string, string> = { done: "complete", wip: "in-progress" };
+          const s = instance.document.meta.status;
+          if (typeof s === "string" && fixes[s]) {
+            instance.document.meta.status = fixes[s];
+          }
+        },
+      });
+      const doc = collection.createDocument({
+        id: "epics/hook-validate",
+        content: "# Validate\n",
+        meta: { status: "done" },
+      });
+      const instance = createModelInstance(doc, model, collection);
+      const result = await instance.validate();
+      expect(called).toBe(1);
+      expect(result.valid).toBe(true);
+      expect(result.errors.length).toBe(0);
+      expect(doc.meta.status).toBe("complete");
+    });
+
+    it("onValidationError does not loop when it can't fix the error", async () => {
+      let called = 0;
+      const model = EpicWithHooks({
+        onValidationError() { called++; },
+      });
+      const doc = collection.createDocument({
+        id: "epics/hook-unfixable",
+        content: "# Unfixable\n",
+        meta: { status: "TOTALLY_BOGUS" },
+      });
+      const instance = createModelInstance(doc, model, collection);
+      const result = await instance.validate();
+      expect(called).toBe(1); // exactly one retry, not a loop
+      expect(result.valid).toBe(false);
     });
   });
 });

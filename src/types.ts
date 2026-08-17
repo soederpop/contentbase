@@ -175,9 +175,34 @@ export interface ModelDefinition<
   exclude?: (string | RegExp)[];
   /** When true, documents are not required to have an H1 title */
   titleOptional?: boolean;
+  /** Lifecycle hooks — see ModelHooks. */
+  hooks?: ModelHooks<
+    ModelDefinition<TName, TMeta, TSections, TRelationships, TComputed>
+  >;
 
   /** The inferred Zod schema for convenience (same as meta) */
   schema: TMeta;
+}
+
+/**
+ * Lifecycle hooks defined on a model. All hooks are optional and may be async;
+ * mutating `instance.document.meta` inside a hook is picked up when frontmatter
+ * is re-serialized on save, and on the next validate() call.
+ *
+ *   - `beforeSave`  — runs before instance.save() writes to disk. Throw to cancel.
+ *   - `afterSave`   — runs after a successful write. Errors propagate to the caller.
+ *   - `onValidationError` — runs when validate() finds errors. Mutate meta to fix;
+ *                     validate() re-runs once after the hook returns.
+ */
+export interface ModelHooks<
+  TDef extends ModelDefinition<any, any, any, any, any> = any,
+> {
+  beforeSave?: (instance: InferModelInstance<TDef>) => void | Promise<void>;
+  afterSave?: (instance: InferModelInstance<TDef>) => void | Promise<void>;
+  onValidationError?: (
+    instance: InferModelInstance<TDef>,
+    errors: import("zod").ZodIssue[],
+  ) => void | Promise<void>;
 }
 
 // ─── Model Instance (the runtime object) ───

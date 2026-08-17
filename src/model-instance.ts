@@ -125,11 +125,20 @@ export function createModelInstance<
   // ─── Validation ───
   const errors = new Map<string, z.ZodIssue>();
 
-  async function validate(): Promise<ValidationResult> {
+  function runValidation(): void {
     errors.clear();
 
+    // Rebuild rawMeta from current document.meta so hook-driven fixes are picked up
+    const currentRaw = {
+      ...(definition.defaults ?? {}),
+      ...(definition.pattern
+        ? matchPatterns(definition.pattern, document.id) ?? {}
+        : {}),
+      ...document.meta,
+    };
+
     // Validate meta
-    const metaResult = definition.meta.safeParse(rawMeta);
+    const metaResult = definition.meta.safeParse(currentRaw);
     if (!metaResult.success) {
       for (const issue of metaResult.error.issues) {
         errors.set(issue.path.join(".") || "meta", issue);
@@ -153,6 +162,17 @@ export function createModelInstance<
           }
         }
       }
+    }
+  }
+
+  async function validate(): Promise<ValidationResult> {
+    runValidation();
+
+    // onValidationError hook: give the model a chance to auto-fix, then re-run once.
+    const onError = definition.hooks?.onValidationError;
+    if (onError && errors.size > 0) {
+      await onError(instance as any, Array.from(errors.values()));
+      runValidation();
     }
 
     return {
@@ -246,7 +266,9 @@ export function createModelInstance<
       return actionFn(collection, instance, opts);
     },
     async save(opts = {}) {
+      await definition.hooks?.beforeSave?.(instance as any);
       await document.save(opts);
+      await definition.hooks?.afterSave?.(instance as any);
     },
   };
 

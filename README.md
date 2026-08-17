@@ -520,6 +520,90 @@ The standalone `validateDocument` function is also available for lower-level use
 
 ---
 
+## Hooks
+
+Models can declare lifecycle hooks that run around persistence and validation. Hooks fire on the **model instance** — `instance.save()` and `instance.validate()` — not on raw `document.save()` calls made outside the model layer.
+
+Available hooks:
+
+| Hook | Fires | Purpose |
+|------|-------|---------|
+| `beforeSave(instance)` | Before `instance.save()` writes to disk | Normalize / coerce meta, throw to cancel |
+| `afterSave(instance)` | After a successful write | Notify, index, touch related docs |
+| `onValidationError(instance, errors)` | When `instance.validate()` finds errors | Attempt to auto-fix; `validate()` re-runs once after the hook |
+
+Mutating `instance.document.meta` inside a hook is picked up when frontmatter is re-serialized on save, and on the next `validate()` call. Throwing from `beforeSave` cancels the write. All hooks may be async.
+
+### Example: normalize sloppy status values
+
+Agents (and humans) often write `status: complete` when the schema expects `completed`. Rather than rejecting the write, fix it silently:
+
+```ts
+export const Task = defineModel("Task", {
+  prefix: "tasks",
+  meta: z.object({
+    status: z.enum(["todo", "in-progress", "completed"]),
+  }),
+  hooks: {
+    beforeSave(task) {
+      const fixes: Record<string, string> = {
+        complete: "completed",
+        done: "completed",
+        wip: "in-progress",
+      };
+      const s = task.document.meta.status;
+      if (typeof s === "string" && fixes[s]) {
+        task.document.meta.status = fixes[s];
+      }
+    },
+  },
+});
+```
+
+### Example: side effects after write
+
+```ts
+hooks: {
+  async afterSave(task) {
+    await searchIndex.upsert(task.id, task.toJSON());
+  },
+},
+```
+
+### Example: auto-repair on validation
+
+Same normalization, but applied whenever `validate()` runs — so queries and imports of malformed docs succeed instead of failing:
+
+```ts
+hooks: {
+  onValidationError(task, errors) {
+    const bad = errors.find((e) => e.path[0] === "status");
+    if (!bad) return;
+    const fixes: Record<string, string> = { complete: "completed", done: "completed" };
+    const s = task.document.meta.status;
+    if (typeof s === "string" && fixes[s]) {
+      task.document.meta.status = fixes[s];
+    }
+  },
+},
+```
+
+`validate()` calls the hook once and then re-runs validation. It does **not** loop — if the hook can't fix the error, validation returns failed on the second pass.
+
+### Example: cancel a save
+
+```ts
+hooks: {
+  beforeSave(task) {
+    if (task.meta.status === "completed" && !task.sections.completionNotes) {
+      throw new Error("Completed tasks must have completion notes");
+    }
+  },
+},
+```
+
+---
+
 ## Serialization
 
 ```ts
