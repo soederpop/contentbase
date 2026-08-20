@@ -31,12 +31,25 @@ export const operators: Record<
   // Strings: substring. Arrays: membership (tags contains "urgent")
   contains: (a, b) =>
     typeof a === "string" ? a.includes(b) : Array.isArray(a) && a.includes(b),
-  startsWith: (a, b) => typeof a === "string" && a.startsWith(b),
-  endsWith: (a, b) => typeof a === "string" && a.endsWith(b),
-  regex: (a, b) =>
-    b instanceof RegExp
-      ? b.test(String(a))
-      : new RegExp(b).test(String(a)),
+  // Arrays apply the match per element, so `needs startsWith "researcher"` finds
+  // ["design", "researcher: dig into X"]. Coercing the array to a string instead
+  // would anchor ^/$ against the joined "design,researcher: dig into X".
+  startsWith: (a, b) =>
+    Array.isArray(a)
+      ? a.some((x) => typeof x === "string" && x.startsWith(b))
+      : typeof a === "string" && a.startsWith(b),
+  endsWith: (a, b) =>
+    Array.isArray(a)
+      ? a.some((x) => typeof x === "string" && x.endsWith(b))
+      : typeof a === "string" && a.endsWith(b),
+  regex: (a, b) => {
+    const re = b instanceof RegExp ? b : new RegExp(b);
+    const test = (v: any) => {
+      re.lastIndex = 0;
+      return re.test(String(v));
+    };
+    return Array.isArray(a) ? a.some(test) : test(a);
+  },
   exists: (a, b) =>
     b ? a !== undefined && a !== null : a === undefined || a === null,
 };

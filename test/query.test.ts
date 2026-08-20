@@ -132,6 +132,25 @@ describe("operators", () => {
     expect(operators.regex("hello", /\d+/)).toBe(false);
   });
 
+  it("startsWith/endsWith match any element of an array-valued field", () => {
+    const needs = ["design", "researcher: dig into pricing"];
+    expect(operators.startsWith(needs, "researcher")).toBe(true);
+    expect(operators.startsWith(needs, "writer")).toBe(false);
+    expect(operators.endsWith(needs, "pricing")).toBe(true);
+    // the element is matched on its own, not against the joined array
+    expect(operators.startsWith(["hosting", "desktop-app"], "desktop")).toBe(true);
+  });
+
+  it("regex matches any element of an array-valued field", () => {
+    const tags = ["hosting", "deployment", "desktop-app", "remote"];
+    expect(operators.regex(tags, "^desktop")).toBe(true);
+    expect(operators.regex(tags, "^nope")).toBe(false);
+    // anchors bind to each element, so $ does not only match the last one
+    expect(operators.regex(tags, "deployment$")).toBe(true);
+    // a global regex must not leak lastIndex between elements
+    expect(operators.regex(tags, /o/g)).toBe(true);
+  });
+
   it("exists checks for defined values", () => {
     expect(operators.exists("value", true)).toBe(true);
     expect(operators.exists(null, true)).toBe(false);
