@@ -164,6 +164,65 @@ describe("Collection", () => {
     });
   });
 
+  describe("refresh re-discovers model definitions", () => {
+    let tmpDir: string;
+    let tmpCollection: Collection;
+
+    beforeEach(async () => {
+      tmpDir = await fs.mkdtemp(path.join(import.meta.dirname, ".tmp-models-"));
+      await fs.mkdir(path.join(tmpDir, "epics"), { recursive: true });
+      await fs.writeFile(
+        path.join(tmpDir, "epics", "one.mdx"),
+        "---\nstatus: created\n---\n# One\n"
+      );
+      await fs.writeFile(
+        path.join(tmpDir, "models.ts"),
+        `import { defineModel } from ${JSON.stringify(path.join(import.meta.dirname, "..", "src", "index.ts"))}\n` +
+          `export const Epic = defineModel('Epic', { prefix: 'epics' })\n`
+      );
+
+      tmpCollection = new Collection({ rootPath: tmpDir });
+      await tmpCollection.load();
+    });
+
+    afterEach(async () => {
+      await fs.rm(tmpDir, { recursive: true });
+    });
+
+    it("picks up models added to models.ts", async () => {
+      expect(tmpCollection.modelDefinitions.map((d) => d.name)).toContain("Epic");
+      expect(tmpCollection.getModelDefinition("Story")).toBeUndefined();
+
+      await fs.writeFile(
+        path.join(tmpDir, "models.ts"),
+        `import { defineModel } from ${JSON.stringify(path.join(import.meta.dirname, "..", "src", "index.ts"))}\n` +
+          `export const Epic = defineModel('Epic', { prefix: 'epics' })\n` +
+          `export const Story = defineModel('Story', { prefix: 'stories' })\n`
+      );
+
+      await tmpCollection.load({ refresh: true });
+
+      expect(tmpCollection.getModelDefinition("Story")).toBeDefined();
+    });
+
+    it("picks up edits to an existing model and drops removed ones", async () => {
+      expect(tmpCollection.getModelDefinition("Epic")!.prefix).toBe("epics");
+
+      await fs.writeFile(
+        path.join(tmpDir, "models.ts"),
+        `import { defineModel } from ${JSON.stringify(path.join(import.meta.dirname, "..", "src", "index.ts"))}\n` +
+          `export const Feature = defineModel('Feature', { prefix: 'features' })\n`
+      );
+
+      await tmpCollection.load({ refresh: true });
+
+      expect(tmpCollection.getModelDefinition("Feature")).toBeDefined();
+      expect(tmpCollection.getModelDefinition("Epic")).toBeUndefined();
+      // The catch-all is never discovered, so it survives a refresh
+      expect(tmpCollection.getModelDefinition("Base")).toBeDefined();
+    });
+  });
+
   describe("readItem cache poisoning (gray-matter)", () => {
     let tmpDir: string;
     let tmpCollection: Collection;

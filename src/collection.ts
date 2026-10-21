@@ -122,6 +122,9 @@ export class Collection {
   #loaded = false;
   #autoDiscover: boolean;
   #moduleLoader?: (filePath: string) => Record<string, any> | Promise<Record<string, any>>;
+  /** Names of models that came from models.{ts,js,mjs} rather than register() */
+  #discovered: Set<string> = new Set();
+  static #reloadCounter = 0;
 
   constructor(options: CollectionOptions) {
     this.#adapter = options.adapter ?? new NodeStorageAdapter();
@@ -195,18 +198,42 @@ export class Collection {
    * Discover and register model definitions from a
    * models.{ts,js,mjs} file in the collection's root path.
    */
-  async #discoverModels(): Promise<void> {
+  async #discoverModels(options: { refresh?: boolean } = {}): Promise<void> {
+    const refresh = options.refresh ?? false;
+
     for (const ext of ["ts", "js", "mjs"]) {
       const candidate = path.resolve(this.rootPath, `models.${ext}`);
       try {
+        // On refresh, defeat the ESM module cache so edits to models.ts are
+        // actually picked up. Custom loaders get the plain path — busting is
+        // their call, since the query string may not survive their resolution.
+        const specifier =
+          refresh && !this.#moduleLoader
+            ? `${candidate}?contentbase-reload=${++Collection.#reloadCounter}`
+            : candidate;
         const mod = this.#moduleLoader
           ? await this.#moduleLoader(candidate)
-          : await import(candidate);
+          : await import(specifier);
+
+        const found = new Set<string>();
         for (const value of Object.values(mod)) {
-          if (isModelDefinition(value) && !this.#models.has((value as any).name)) {
+          if (!isModelDefinition(value)) continue;
+          const name = (value as any).name;
+          found.add(name);
+          // A refresh replaces previously discovered definitions; manually
+          // registered models still win over discovery.
+          if (!this.#models.has(name) || (refresh && this.#discovered.has(name))) {
             this.register(value as any);
           }
         }
+
+        // Drop models that were discovered before but no longer exist
+        if (refresh) {
+          for (const name of this.#discovered) {
+            if (!found.has(name)) this.#models.delete(name);
+          }
+        }
+        this.#discovered = found;
         return;
       } catch {
         continue;
@@ -272,9 +299,10 @@ export class Collection {
       return this;
     }
 
-    // Auto-discover models if none have been manually registered
-    if (this.#models.size === 0 && this.#autoDiscover) {
-      await this.#discoverModels();
+    // Auto-discover models if none have been manually registered.
+    // A refresh always re-reads models.ts so model definition edits take effect.
+    if (this.#autoDiscover && (this.#models.size === 0 || (refresh && this.#loaded))) {
+      await this.#discoverModels({ refresh: this.#loaded && refresh });
     }
 
     // Auto-register Base model as catch-all if not already registered
