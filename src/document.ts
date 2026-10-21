@@ -35,6 +35,8 @@ export class Document {
   #content: string;
   #meta: Record<string, unknown>;
   #ast: Root | null;
+  /** The content #ast was parsed from, so reload() can keep an unchanged tree. */
+  #astSource: string | null = null;
   #path: string | null;
 
   constructor(options: DocumentOptions) {
@@ -63,6 +65,7 @@ export class Document {
   get ast(): Root {
     if (!this.#ast) {
       this.#ast = this.processor.parse(this.#content);
+      this.#astSource = this.#content;
     }
     return this.#ast;
   }
@@ -417,6 +420,7 @@ export class Document {
   rerenderAST(newContent: string = this.content): this {
     this.#content = newContent;
     this.#ast = this.processor.parse(newContent);
+    this.#astSource = newContent;
     return this;
   }
 
@@ -542,9 +546,19 @@ export class Document {
       throw new Error("Cannot reload a standalone document — it has no collection");
     }
     const item = await this.collection.readItem(this.id);
+    // A collection refresh reloads every cached document. Re-parsing them all
+    // costs seconds on large collections, so keep the tree when the file's
+    // text is unchanged and the tree was parsed from exactly that text.
+    const unchanged =
+      this.#ast !== null &&
+      item.content === this.#content &&
+      this.#astSource === this.#content;
     this.#content = item.content;
     this.#meta = item.meta;
-    this.#ast = null; // Will be lazily re-parsed
+    if (!unchanged) {
+      this.#ast = null; // Will be lazily re-parsed
+      this.#astSource = null;
+    }
     return this;
   }
 }

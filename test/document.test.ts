@@ -223,3 +223,26 @@ describe("Document", () => {
     });
   });
 });
+
+describe("Document.reload keeps an unchanged AST", () => {
+  it("reuses the parsed tree when the file did not change, re-parses when it did", async () => {
+    const { mkdtempSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { Collection } = await import("../src/collection");
+    const dir = mkdtempSync(join(tmpdir(), "cb-reload-"));
+    writeFileSync(join(dir, "note.md"), "# Title\n\nBody\n");
+    const collection = new Collection({ rootPath: dir, autoDiscover: false } as any);
+    await collection.load();
+    const doc = collection.document("note");
+    const before = doc.ast;
+
+    await collection.load({ refresh: true });
+    expect(doc.ast).toBe(before);
+
+    writeFileSync(join(dir, "note.md"), "# Title\n\nChanged\n");
+    await collection.load({ refresh: true });
+    expect(doc.ast).not.toBe(before);
+    expect(doc.content).toContain("Changed");
+  });
+});
