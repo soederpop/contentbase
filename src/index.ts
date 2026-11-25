@@ -1,5 +1,5 @@
 // Core classes
-export { Collection, introspectMetaSchema } from "./collection";
+export { Collection, introspectMetaSchema, isModelTemplatePathId } from "./collection";
 export type { FieldInfo } from "./collection";
 export { Document } from "./document";
 export { AstQuery } from "./ast-query";

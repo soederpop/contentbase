@@ -62,23 +62,9 @@ async function handler(options: z.infer<typeof argsSchema>, context: { container
 
   const definitionDefaults: Record<string, unknown> = def.defaults ?? {}
 
-  // Template lookup
-  const templateExtensions = ['md', 'mdx']
-  let templateContent: string | null = null
-
-  for (const ext of templateExtensions) {
-    const templatePath = path.resolve(
-      collection.rootPath,
-      'templates',
-      `${modelName.toLowerCase()}.${ext}`
-    )
-    try {
-      templateContent = await fs.readFile(templatePath, 'utf8')
-      break
-    } catch {
-      // template not found, try next extension
-    }
-  }
+  // Template lookup: models/<Name>.template.md, then templates/<name>.md
+  const template = await collection.readTemplate(modelName)
+  const templateContent: string | null = template?.content ?? null
 
   let content: string
 
@@ -185,7 +171,7 @@ cnotes create <model> --title "Document Title" [options]
 
 ## Template Lookup
 
-If \`templates/<model>.md\` (or \`.mdx\`) exists in the content root, it will be used as the document scaffold. Template frontmatter is merged with schema defaults and CLI overrides.
+If \`models/<Model>.template.md\` (or the older \`templates/<model>.md\`) exists in the content root, it is used as the document scaffold. Template frontmatter is merged with schema defaults and CLI overrides.
 
 ## Meta Priority
 

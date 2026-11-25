@@ -4,7 +4,7 @@ import picomatch from "picomatch";
 import { Document } from "./document";
 import { CollectionQuery } from "./query/collection-query";
 import { createModelInstance } from "./model-instance";
-import { pluralize } from "./utils/inflect";
+import { pluralize, kebabCase } from "./utils/inflect";
 import { Base } from "./base-model";
 import { NodeStorageAdapter } from "./adapters/node-fs";
 import { defineModel, type DefineModelConfig } from "./define-model";
@@ -330,6 +330,9 @@ export class Collection {
         // Globally exclude templates directory — templates are only used
         // for scaffolding and should never appear in queries or listings
         if (pathId.startsWith("templates/") || pathId === "templates") return;
+        // A model's template next to its definition (models/<name>.template.md)
+        // is a scaffold, not a document.
+        if (isModelTemplatePathId(pathId)) return;
 
         const raw = await this.#adapter.readFile(key);
         const { data, content } = matter(raw, { cache: false });
@@ -615,6 +618,31 @@ export class Collection {
 
   resolve(...args: string[]): string {
     return this.#adapter.join(this.rootPath, ...args);
+  }
+
+  /**
+   * Where a model's document template may live, in lookup order:
+   * `models/<Name>.template.md`, `models/<name-kebab>.template.md`, then the
+   * older `templates/<name>.md` (and `.mdx`).
+   */
+  templatePathsFor(modelName: string): string[] {
+    const names = [...new Set([modelName, kebabCase(modelName), modelName.toLowerCase()])];
+    return [
+      ...names.flatMap((n) => ["md", "mdx"].map((ext) => this.resolve("models", `${n}.template.${ext}`))),
+      ...["md", "mdx"].map((ext) => this.resolve("templates", `${modelName.toLowerCase()}.${ext}`)),
+    ];
+  }
+
+  /** A model's document template as text, with the file it came from; null when it has none. */
+  async readTemplate(modelName: string): Promise<{ path: string; content: string } | null> {
+    for (const candidate of this.templatePathsFor(modelName)) {
+      try {
+        return { path: candidate, content: await this.#adapter.readFile(candidate) };
+      } catch {
+        // not there, try the next one
+      }
+    }
+    return null;
   }
 
   getPathId(key: string): string {
@@ -931,4 +959,9 @@ export class Collection {
       name: this.name,
     };
   }
+}
+
+/** True for `models/<anything>.template`, a model's template beside its definition. */
+export function isModelTemplatePathId(pathId: string): boolean {
+  return pathId.startsWith("models/") && /\.template$/i.test(pathId);
 }
